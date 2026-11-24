@@ -1,0 +1,1 @@
+{"success":true,"code":0,"data":{"pageSize":2,"totalCount":42,"totalPage":21,"currentPage":1,"resultList":[{"symbol":"BTC_USDT","currency":"USDT","available":119932265.044941073109760362896794110492,"snapshotTime":1795507200000},{"symbol":"BTC_USDT","currency":"USDT","available":119929106.917446236948109081058817604149,"snapshotTime":1795492800000}]}}

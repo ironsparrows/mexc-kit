@@ -40,7 +40,7 @@ Import `Foundation` with a plain `import Foundation`, not `FoundationEssentials`
 
 - In `MexcKitCore` and `MexcKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
 - A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them.
-- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitTests` for the client. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, and `Support/` holds fakes and helpers.
+- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitTests` for the client. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, `Support/` holds fakes and helpers, and `Fixtures/` holds responses recorded from MEXC, byte for byte except for replaced IDs.
 
 Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out:
 

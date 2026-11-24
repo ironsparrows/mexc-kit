@@ -89,10 +89,10 @@ package struct MillisecondTimestamp: Decodable, Sendable {
 }
 
 /// A point in time sent as whole seconds since 1970, as a JSON integer or a string.
-struct SecondTimestamp: Decodable {
-    let date: Date
+package struct SecondTimestamp: Decodable, Sendable {
+    package let date: Date
 
-    init(from decoder: any Decoder) throws {
+    package init(from decoder: any Decoder) throws {
         date = Date(timeIntervalSince1970: Double(try decodeInteger(from: decoder)))
     }
 }
@@ -105,4 +105,18 @@ private func decodeInteger(from decoder: any Decoder) throws -> Int64 {
         throw DecodingError.dataCorruptedError(in: container, debugDescription: "Not an integer: \(text)")
     }
     return number
+}
+
+extension KeyedDecodingContainer {
+    func decimal(forKey key: Key) throws -> Decimal {
+        try decode(FlexibleDecimal.self, forKey: key).value
+    }
+
+    func decimalIfPresent(forKey key: Key) throws -> Decimal? {
+        try decodeIfPresent(FlexibleDecimal.self, forKey: key)?.value
+    }
+
+    func millisecondDate(forKey key: Key) throws -> Date {
+        try decode(MillisecondTimestamp.self, forKey: key).date
+    }
 }

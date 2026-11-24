@@ -8,6 +8,7 @@ struct VocabularyTests {
         case orderType, orderSide, orderState, orderCategory, orderErrorCode, bestPrice
         case selfTradePreventionMode, positionSide, marginMode, positionMode, priceSource
         case triggerCondition, planOrderState, trailingOrderState, profitRatePeriod
+        case contractState, dealTakerSide, dealPositionEffect
     }
 
     @Test(arguments: Vocabulary.allCases)
@@ -21,6 +22,11 @@ struct VocabularyTests {
         let decoded = try JSONDecoder().decode([MexcFutures.TransferState].self, from: Data(json.utf8))
         #expect(decoded.first?.rawValue == "PROCESSING")
         #expect(String(decoding: try JSONEncoder().encode(decoded), as: UTF8.self) == json)
+    }
+
+    @Test func `an unknown candle interval decodes and encodes back unchanged`() throws {
+        let json = #"["Min3"]"#
+        #expect(try roundTrip(MexcFutures.Candle.Interval.self, json) == json)
     }
 
     // Values from MEXC's documentation, so a mistyped raw value fails here.
@@ -100,9 +106,24 @@ struct VocabularyTests {
         ("TrailingOrderState.canceled", MexcFutures.TrailingOrderState.canceled.rawValue, 4),
         ("ProfitRatePeriod.day", MexcFutures.ProfitRatePeriod.day.rawValue, 1),
         ("ProfitRatePeriod.week", MexcFutures.ProfitRatePeriod.week.rawValue, 2),
+        ("Contract.State.enabled", MexcFutures.Contract.State.enabled.rawValue, 0),
+        ("Contract.State.paused", MexcFutures.Contract.State.paused.rawValue, 4),
+        ("Deal.TakerSide.buy", MexcFutures.Deal.TakerSide.buy.rawValue, 1),
+        ("Deal.TakerSide.sell", MexcFutures.Deal.TakerSide.sell.rawValue, 2),
+        ("Deal.PositionEffect.bothOpened", MexcFutures.Deal.PositionEffect.bothOpened.rawValue, 1),
+        ("Deal.PositionEffect.mixed", MexcFutures.Deal.PositionEffect.mixed.rawValue, 3),
     ])
     func `each member has MEXC's documented wire value`(member: String, rawValue: Int, documented: Int) {
         #expect(rawValue == documented, "\(member)")
+    }
+
+    @Test(arguments: [
+        (MexcFutures.Candle.Interval.oneMinute, "Min1"), (.fiveMinutes, "Min5"), (.fifteenMinutes, "Min15"),
+        (.thirtyMinutes, "Min30"), (.oneHour, "Min60"), (.fourHours, "Hour4"), (.eightHours, "Hour8"),
+        (.oneDay, "Day1"), (.oneWeek, "Week1"), (.oneMonth, "Month1"),
+    ])
+    func `each candle interval has MEXC's documented wire value`(interval: MexcFutures.Candle.Interval, documented: String) {
+        #expect(interval.rawValue == documented)
     }
 
     @Test(arguments: [
@@ -129,6 +150,9 @@ struct VocabularyTests {
         case .planOrderState: try roundTrip(MexcFutures.PlanOrderState.self, json)
         case .trailingOrderState: try roundTrip(MexcFutures.TrailingOrderState.self, json)
         case .profitRatePeriod: try roundTrip(MexcFutures.ProfitRatePeriod.self, json)
+        case .contractState: try roundTrip(MexcFutures.Contract.State.self, json)
+        case .dealTakerSide: try roundTrip(MexcFutures.Deal.TakerSide.self, json)
+        case .dealPositionEffect: try roundTrip(MexcFutures.Deal.PositionEffect.self, json)
         }
     }
 

@@ -6,7 +6,8 @@ extension MexcFutures {
     /// A client is a reference: every holder shares its clock offset. Public endpoints never read
     /// credentials. A private endpoint on a client without credentials throws
     /// ``ClientError/Reason/missingCredentials`` before anything is sent.
-    public final class Client: Sendable {
+    public final class Client: API {
+        public let market: any MarketAPI
         let rest: RESTClient
         let clock: ServerClock
 
@@ -43,6 +44,7 @@ extension MexcFutures {
                 language: configuration.language,
                 timeout: configuration.timeout
             )
+            market = MarketEndpoints(rest: rest)
         }
 
         /// Measures the offset between this device's clock and MEXC's, and applies it to the

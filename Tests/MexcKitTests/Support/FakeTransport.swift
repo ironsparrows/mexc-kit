@@ -15,6 +15,16 @@ actor FakeTransport: HTTPTransport {
         self.init(responses: [TransportResponse(status: status, body: Data(json.utf8))])
     }
 
+    /// A transport that answers with a recorded response from `Fixtures`, such as `"Market/ticker"`.
+    init(fixture name: String) throws {
+        let path = "Fixtures/" + name
+        let url = try #require(Bundle.module.url(
+            forResource: (path as NSString).lastPathComponent, withExtension: "json",
+            subdirectory: (path as NSString).deletingLastPathComponent
+        ))
+        self.init(responses: [TransportResponse(status: 200, body: try Data(contentsOf: url))])
+    }
+
     func send(_ request: TransportRequest) async throws -> TransportResponse {
         requests.append(request)
         guard !responses.isEmpty else {

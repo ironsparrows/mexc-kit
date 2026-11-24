@@ -1,0 +1,1 @@
+{"success":true,"code":0,"data":{"pageSize":2,"totalCount":1620,"totalPage":810,"currentPage":1,"resultList":[{"symbol":"BTC_USDT","fundingRate":0.000061,"settleTime":1795507200000,"collectCycle":8,"fundingType":0},{"symbol":"BTC_USDT","fundingRate":0.000028,"settleTime":1795478400000,"collectCycle":8,"fundingType":0}]}}
