@@ -12,7 +12,7 @@ struct OrderEndpointsTests {
     @Test func `placing an order sends the documented fields and decodes the ID`() async throws {
         let request = MexcFutures.OrderRequest.open(
             .long, "BTC_USDT", .limit(price: Decimal(string: "60000.5")!), volume: 10, leverage: 20, margin: .isolated,
-            takeProfit: .init(price: 64000, trigger: .fair), stopLoss: .init(price: 58000),
+            takeProfit: .init(price: 64000, source: .fair), stopLoss: .init(price: 58000),
             externalID: "grid-7", options: .init(reduceOnly: true, positionMode: .oneWay, triggerProtection: true)
         )
         let (placed, sent) = try await call(
@@ -308,7 +308,7 @@ struct OrderEndpointsTests {
              "priceProtect":1,"createTime":1}
             """#
         let order = try JSONDecoder().decode(MexcFutures.Order.self, from: Data(json.utf8))
-        #expect(order.takeProfit == .init(price: 70000, trigger: .index))
+        #expect(order.takeProfit == .init(price: 70000, source: .index))
         #expect(order.stopLoss == nil)
         #expect(order.bestPrice == .sameSide5)
         #expect(order.triggerProtection == true)

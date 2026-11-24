@@ -205,9 +205,9 @@ private struct OrderBody: Encodable, Sendable {
         positionId = try request.position.map(NumericID.init)
         externalOid = request.externalID
         takeProfitPrice = request.takeProfit?.price
-        profitTrend = request.takeProfit?.trigger
+        profitTrend = request.takeProfit?.source
         stopLossPrice = request.stopLoss?.price
-        lossTrend = request.stopLoss?.trigger
+        lossTrend = request.stopLoss?.source
         positionMode = options.positionMode
         reduceOnly = options.reduceOnly ? true : nil
         priceProtect = options.triggerProtection ? 1 : nil

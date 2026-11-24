@@ -107,8 +107,7 @@ extension MexcFutures.Order: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(MexcFutures.OrderID.self, forKey: .orderId)
         symbol = try container.decode(MexcFutures.Symbol.self, forKey: .symbol)
-        position = try container.decodeIfPresent(MexcFutures.PositionID.self, forKey: .positionId)
-            .flatMap { $0.rawValue == "0" ? nil : $0 }
+        position = try container.nonZeroIfPresent(MexcFutures.PositionID.self, forKey: .positionId)
         side = try container.decode(MexcFutures.OrderSide.self, forKey: .side)
         type = try container.decode(MexcFutures.OrderType.self, forKey: .orderType)
         category = try container.decode(MexcFutures.OrderCategory.self, forKey: .category)
@@ -128,8 +127,8 @@ extension MexcFutures.Order: Decodable {
         totalFee = try container.decimalIfPresent(forKey: .totalFee)
         feeAsset = try container.decode(String.self, forKey: .feeCurrency)
         profit = try container.decimal(forKey: .profit)
-        takeProfit = try Self.attachedStop(in: container, price: .takeProfitPrice, trigger: .profitTrend)
-        stopLoss = try Self.attachedStop(in: container, price: .stopLossPrice, trigger: .lossTrend)
+        takeProfit = try container.attachedStop(price: .takeProfitPrice, source: .profitTrend)
+        stopLoss = try container.attachedStop(price: .stopLossPrice, source: .lossTrend)
         bestPrice = try container.decodeIfPresent(MexcFutures.BestPrice.self, forKey: .bboTypeNum)
             .flatMap { $0.rawValue == 0 ? nil : $0 }
         externalID = try container.decodeIfPresent(MexcFutures.ExternalOrderID.self, forKey: .externalOid)
@@ -139,14 +138,5 @@ extension MexcFutures.Order: Decodable {
         triggerProtection = try container.decodeIfPresent(Int.self, forKey: .priceProtect).map { $0 == 1 }
         createdAt = try container.millisecondDate(forKey: .createTime)
         updatedAt = try container.millisecondDateIfPresent(forKey: .updateTime)
-    }
-
-    /// The take-profit or stop-loss in `container`; `nil` when its price is missing or 0.
-    private static func attachedStop(
-        in container: KeyedDecodingContainer<CodingKeys>, price priceKey: CodingKeys, trigger triggerKey: CodingKeys
-    ) throws -> MexcFutures.AttachedStop? {
-        guard let price = try container.decimalIfPresent(forKey: priceKey), price != 0 else { return nil }
-        let trigger = try container.decodeIfPresent(MexcFutures.PriceSource.self, forKey: triggerKey)
-        return MexcFutures.AttachedStop(price: price, trigger: trigger ?? .last)
     }
 }

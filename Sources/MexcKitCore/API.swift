@@ -12,5 +12,11 @@ extension MexcFutures {
         var position: any PositionAPI { get }
         /// Placing, changing, canceling and reading orders, and their fills.
         var order: any OrderAPI { get }
+        /// Plan orders: orders placed once a trigger price is reached.
+        var planOrder: any PlanOrderAPI { get }
+        /// Stop orders on positions, and the attached stops of limit orders.
+        var stopOrder: any StopOrderAPI { get }
+        /// Trailing orders.
+        var trailingOrder: any TrailingOrderAPI { get }
     }
 }

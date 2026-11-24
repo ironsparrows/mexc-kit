@@ -39,6 +39,13 @@ struct PublicSurfaceTests {
             MexcFutures.FeeTotals.self, MexcFutures.DiscountUsage.self, MexcFutures.FeeDeductionAsset.self,
             MexcFutures.FeeDiscount.self, MexcFutures.FeeDiscount.Level.self, MexcFutures.FeeDeduction.self,
             MexcFutures.FeeDeduction.Source.self,
+            (any MexcFutures.PlanOrderAPI).self, (any MexcFutures.StopOrderAPI).self,
+            (any MexcFutures.TrailingOrderAPI).self, MexcFutures.Trigger.self, MexcFutures.PlanOrderRequest.self,
+            MexcFutures.PlanOrderRequest.Lifetime.self, MexcFutures.PlanOrderRequest.Options.self,
+            MexcFutures.PlanOrder.self, MexcFutures.StopOrderRequest.self, MexcFutures.StopOrder.self,
+            MexcFutures.StopOrder.Exit.self, MexcFutures.StopOrder.Leg.self, MexcFutures.TrailingOrderRequest.self,
+            MexcFutures.TrailingOrder.self, MexcFutures.TrailingOrder.Callback.self,
+            MexcFutures.TrailingOrder.Callback.Kind.self,
         ]
         _ = types
     }

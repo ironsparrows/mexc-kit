@@ -63,8 +63,11 @@ One word per concept in code, comments and docs.
 | pending order | an order not yet final | "open orders", "current orders", "in-flight" |
 | plan order | a trigger order that places an order | `planorder/*`, `plan.order` |
 | stop order | a take-profit or stop-loss order on a position | `stoporder/*`, `stopPlanOrderId`, `stop.planorder` |
-| attached stop | take-profit and stop-loss prices carried by a limit order | `stoporder/change_price`, `stop.order` |
+| attached stop | take-profit and stop-loss prices carried by a limit or plan order | `stoporder/change_price`, `stop.order` |
 | trailing order | a callback (trailing) order | `trackorder/*`, `track.order` |
+| conditional order | a plan, stop or trailing order | — |
+| exit | a stop order's take-profit or stop-loss | `takeProfitPrice`, `stopLossPrice` on `stoporder/*` |
+| callback | how far the price must move back before a trailing order triggers | `backType`, `backValue` |
 | volume | size in contracts | `vol` |
 | contract | a futures market: its symbol and trading rules | "contract", "contract detail" |
 | balance | the futures account's holdings of one asset | "assets", "asset" |

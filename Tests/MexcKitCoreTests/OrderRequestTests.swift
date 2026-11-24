@@ -18,11 +18,11 @@ struct OrderRequestTests {
     @Test func `opening carries the leverage and stops; closing carries the position`() {
         let open = MexcFutures.OrderRequest.open(
             .long, "BTC_USDT", .limit(price: 100), volume: 2, leverage: 20, margin: .isolated,
-            takeProfit: .init(price: 120), stopLoss: .init(price: 90, trigger: .fair)
+            takeProfit: .init(price: 120), stopLoss: .init(price: 90, source: .fair)
         )
         #expect(open.leverage == 20)
-        #expect(open.takeProfit == .init(price: 120, trigger: .last))
-        #expect(open.stopLoss?.trigger == .fair)
+        #expect(open.takeProfit == .init(price: 120, source: .last))
+        #expect(open.stopLoss?.source == .fair)
         #expect(open.position == nil)
 
         let close = MexcFutures.OrderRequest.close(

@@ -8,7 +8,8 @@ struct VocabularyTests {
         case orderType, orderSide, orderState, orderCategory, orderErrorCode, bestPrice
         case selfTradePreventionMode, positionSide, marginMode, positionMode, priceSource
         case triggerCondition, planOrderState, trailingOrderState, profitRatePeriod
-        case contractState, dealTakerSide, dealPositionEffect, positionState, feeDeductionSource
+        case contractState, dealTakerSide, dealPositionEffect, positionState
+        case planOrderLifetime, stopOrderLeg, trailingCallbackKind, feeDeductionSource
     }
 
     @Test(arguments: Vocabulary.allCases)
@@ -126,6 +127,12 @@ struct VocabularyTests {
         ("PositionState.holding", MexcFutures.PositionState.holding.rawValue, 1),
         ("PositionState.systemHeld", MexcFutures.PositionState.systemHeld.rawValue, 2),
         ("PositionState.closed", MexcFutures.PositionState.closed.rawValue, 3),
+        ("PlanOrderRequest.Lifetime.oneDay", MexcFutures.PlanOrderRequest.Lifetime.oneDay.rawValue, 1),
+        ("PlanOrderRequest.Lifetime.sevenDays", MexcFutures.PlanOrderRequest.Lifetime.sevenDays.rawValue, 2),
+        ("StopOrder.Leg.takeProfit", MexcFutures.StopOrder.Leg.takeProfit.rawValue, 1),
+        ("StopOrder.Leg.stopLoss", MexcFutures.StopOrder.Leg.stopLoss.rawValue, 2),
+        ("TrailingOrder.Callback.Kind.percentage", MexcFutures.TrailingOrder.Callback.Kind.percentage.rawValue, 1),
+        ("TrailingOrder.Callback.Kind.distance", MexcFutures.TrailingOrder.Callback.Kind.distance.rawValue, 2),
         ("Contract.State.enabled", MexcFutures.Contract.State.enabled.rawValue, 0),
         ("Contract.State.paused", MexcFutures.Contract.State.paused.rawValue, 4),
         ("Deal.TakerSide.buy", MexcFutures.Deal.TakerSide.buy.rawValue, 1),
@@ -184,6 +191,9 @@ struct VocabularyTests {
         case .dealTakerSide: try roundTrip(MexcFutures.Deal.TakerSide.self, json)
         case .dealPositionEffect: try roundTrip(MexcFutures.Deal.PositionEffect.self, json)
         case .positionState: try roundTrip(MexcFutures.PositionState.self, json)
+        case .planOrderLifetime: try roundTrip(MexcFutures.PlanOrderRequest.Lifetime.self, json)
+        case .stopOrderLeg: try roundTrip(MexcFutures.StopOrder.Leg.self, json)
+        case .trailingCallbackKind: try roundTrip(MexcFutures.TrailingOrder.Callback.Kind.self, json)
         case .feeDeductionSource: try roundTrip(MexcFutures.FeeDeduction.Source.self, json)
         }
     }

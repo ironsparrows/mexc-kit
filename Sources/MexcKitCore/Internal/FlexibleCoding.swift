@@ -123,4 +123,9 @@ extension KeyedDecodingContainer {
     func millisecondDateIfPresent(forKey key: Key) throws -> Date? {
         try decodeIfPresent(MillisecondTimestamp.self, forKey: key)?.date
     }
+
+    /// An ID, or `nil` when it's missing or MEXC sends 0 for none.
+    func nonZeroIfPresent<ID: RawRepresentable<String> & Decodable>(_: ID.Type, forKey key: Key) throws -> ID? {
+        try decodeIfPresent(ID.self, forKey: key).flatMap { $0.rawValue == "0" ? nil : $0 }
+    }
 }
