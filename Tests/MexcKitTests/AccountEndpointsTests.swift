@@ -14,7 +14,7 @@ struct AccountEndpointsTests {
             asset: "USDT", available: Decimal(string: "32.80984793658")!, frozen: 0, positionMargin: 0,
             cash: Decimal(string: "32.80984793")!, equity: Decimal(string: "32.80984793")!, unrealizedProfit: 0,
             transferable: Decimal(string: "32.80984793658")!, availableToOpen: Decimal(string: "32.80984793658")!,
-            bonus: 0, bonusExpiresAt: nil, debt: 0, contributedMargin: 0
+            trialBonus: 0, trialBonusExpiresAt: nil, debt: 0, contributedMargin: 0
         )])
     }
 
@@ -32,10 +32,10 @@ struct AccountEndpointsTests {
             """#
         let balance = try JSONDecoder().decode(MexcFutures.Balance.self, from: Data(json.utf8))
         #expect(balance.unrealizedProfit == -6)
-        #expect(balance.bonusExpiresAt == Date(timeIntervalSince1970: 1_760_537_642))
+        #expect(balance.trialBonusExpiresAt == Date(timeIntervalSince1970: 1_760_537_642))
         #expect(balance.transferable == nil)
         #expect(balance.availableToOpen == nil)
-        #expect(balance.bonus == nil)
+        #expect(balance.trialBonus == nil)
         #expect(balance.debt == nil)
         #expect(balance.contributedMargin == nil)
     }
@@ -221,13 +221,13 @@ struct AccountEndpointsTests {
             """)
         #expect(deductions == [
             .init(
-                fillID: .init(rawValue: "54236193"), orderID: .init(rawValue: "739132568196170240"), symbol: nil,
+                fill: .init(rawValue: "54236193"), order: .init(rawValue: "739132568196170240"), symbol: nil,
                 fee: Decimal(string: "0.0906990372")!, feeAsset: "USDT", source: .trialBonus,
                 deductedFee: Decimal(string: "0.0906990372")!, deductedFeeAsset: "USDT",
                 filledAt: Date(timeIntervalSince1970: 1_761_893_337)
             ),
             .init(
-                fillID: .init(rawValue: "52060733"), orderID: .init(rawValue: "735908917455962624"), symbol: nil,
+                fill: .init(rawValue: "52060733"), order: .init(rawValue: "735908917455962624"), symbol: nil,
                 fee: Decimal(string: "0.297936756")!, feeAsset: "USDT", source: .notDeducted, deductedFee: nil,
                 deductedFeeAsset: nil, filledAt: Date(timeIntervalSince1970: 1_761_124_758)
             ),
@@ -257,7 +257,7 @@ struct AccountEndpointsTests {
 
     @Test func `a sub-account's position mode, as the documented fields describe`() async throws {
         let transport = FakeTransport(json: #"{"success":true,"code":0,"data":{"subAccount":"sub_01","positionMode":2}}"#)
-        let mode = try await AccountEndpoints(rest: .test(transport: transport)).positionMode(subaccount: "sub_01")
+        let mode = try await AccountEndpoints(rest: .test(transport: transport)).positionMode(subAccount: "sub_01")
         #expect(mode == .oneWay)
         let sent = try #require(await transport.requests.first)
         #expect(sent.url.absoluteString == """
@@ -269,7 +269,7 @@ struct AccountEndpointsTests {
     @Test func `the documented sub-account position mode example, a leverage list, throws DecodingError`() async throws {
         let transport = try FakeTransport(fixture: "Position/leverage_subaccount")
         await #expect(throws: DecodingError.self) {
-            try await AccountEndpoints(rest: .test(transport: transport)).positionMode(subaccount: "mexc_sub_01")
+            try await AccountEndpoints(rest: .test(transport: transport)).positionMode(subAccount: "mexc_sub_01")
         }
     }
 

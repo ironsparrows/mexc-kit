@@ -34,7 +34,7 @@ extension MexcFutures {
         func positionMode() async throws -> PositionMode
 
         /// A sub-account's position mode, by its name. Needs the master account's key.
-        func positionMode(subaccount: String) async throws -> PositionMode
+        func positionMode(subAccount: String) async throws -> PositionMode
 
         /// Sets the account's position mode. MEXC refuses while the account has pending orders, waiting
         /// plan orders or open positions; going from hedge to one-way mode resets the risk limit level

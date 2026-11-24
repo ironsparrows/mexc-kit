@@ -134,6 +134,7 @@ extension MexcFutures.Order: Decodable {
         externalID = try container.decodeIfPresent(MexcFutures.ExternalOrderID.self, forKey: .externalOid)
         errorCode = try container.decodeIfPresent(MexcFutures.OrderErrorCode.self, forKey: .errorCode)
         positionMode = try container.decodeIfPresent(MexcFutures.PositionMode.self, forKey: .positionMode)
+            .flatMap { $0.rawValue == 0 ? nil : $0 }
         reduceOnly = try container.decodeIfPresent(Bool.self, forKey: .reduceOnly)
         triggerProtection = try container.decodeIfPresent(Int.self, forKey: .priceProtect).map { $0 == 1 }
         createdAt = try container.millisecondDate(forKey: .createTime)

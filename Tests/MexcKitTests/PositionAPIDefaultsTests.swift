@@ -60,7 +60,7 @@ private struct RecordingPositions: MexcFutures.PositionAPI {
     func reverse(_ position: MexcFutures.PositionID, in symbol: MexcFutures.Symbol, volume: Decimal) async throws {}
 
     func closeAll() async throws {}
-    func leverage(_ symbol: MexcFutures.Symbol, subaccount: String) async throws -> [MexcFutures.LeverageSetting] { [] }
+    func leverage(_ symbol: MexcFutures.Symbol, subAccount: String) async throws -> [MexcFutures.LeverageSetting] { [] }
     func setLeverage(_ leverage: Int, of position: MexcFutures.PositionID) async throws {}
     func setLeverage(
         _ leverage: Int, in symbol: MexcFutures.Symbol, side: MexcFutures.PositionSide,

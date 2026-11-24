@@ -4,8 +4,8 @@ public import Foundation
 
 extension MexcFutures {
     /// A plan order to place: an order MEXC places once its trigger price is reached. Built with
-    /// ``open(_:_:_:volume:leverage:margin:trigger:lifetime:takeProfit:stopLoss:options:)`` or
-    /// ``close(_:_:_:volume:margin:trigger:lifetime:options:)``.
+    /// ``open(_:_:_:volume:leverage:marginMode:trigger:lifetime:takeProfit:stopLoss:options:)`` or
+    /// ``close(_:_:_:volume:marginMode:trigger:lifetime:options:)``.
     ///
     /// Volumes are in contracts. MEXC doesn't take a best price on a plan order: placing one with
     /// ``OrderRequest/Pricing/bestPrice(_:)`` throws ``ClientError/Reason/invalidRequest`` before anything
@@ -28,12 +28,12 @@ extension MexcFutures {
         /// Opens a position, or adds to one, once the trigger is reached.
         public static func open(
             _ direction: OrderRequest.Direction, _ symbol: Symbol, _ pricing: OrderRequest.Pricing, volume: Decimal,
-            leverage: Int, margin: MarginMode, trigger: Trigger, lifetime: Lifetime,
+            leverage: Int, marginMode: MarginMode, trigger: Trigger, lifetime: Lifetime,
             takeProfit: AttachedStop? = nil, stopLoss: AttachedStop? = nil, options: Options = .init()
         ) -> Self {
             Self(
                 symbol: symbol, side: direction == .long ? .openLong : .openShort, pricing: pricing, volume: volume,
-                leverage: leverage, marginMode: margin, trigger: trigger, lifetime: lifetime, takeProfit: takeProfit,
+                leverage: leverage, marginMode: marginMode, trigger: trigger, lifetime: lifetime, takeProfit: takeProfit,
                 stopLoss: stopLoss, options: options
             )
         }
@@ -41,11 +41,11 @@ extension MexcFutures {
         /// Reduces or closes a position once the trigger is reached; `direction` is the position's.
         public static func close(
             _ direction: OrderRequest.Direction, _ symbol: Symbol, _ pricing: OrderRequest.Pricing, volume: Decimal,
-            margin: MarginMode, trigger: Trigger, lifetime: Lifetime, options: Options = .init()
+            marginMode: MarginMode, trigger: Trigger, lifetime: Lifetime, options: Options = .init()
         ) -> Self {
             Self(
                 symbol: symbol, side: direction == .long ? .closeLong : .closeShort, pricing: pricing, volume: volume,
-                leverage: nil, marginMode: margin, trigger: trigger, lifetime: lifetime, takeProfit: nil,
+                leverage: nil, marginMode: marginMode, trigger: trigger, lifetime: lifetime, takeProfit: nil,
                 stopLoss: nil, options: options
             )
         }

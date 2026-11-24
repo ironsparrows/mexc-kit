@@ -8,8 +8,8 @@ extension MexcFutures {
     /// The optional properties are in MEXC's documentation but missing from some documented examples;
     /// `nil` means the response didn't include the field.
     public struct FeeDeduction: Hashable, Sendable {
-        public let fillID: FillID
-        public let orderID: OrderID
+        public let fill: FillID
+        public let order: OrderID
         public let symbol: Symbol?
         public let fee: Decimal
         /// The asset the fee is paid in, such as `"USDT"`.
@@ -21,11 +21,11 @@ extension MexcFutures {
         public let filledAt: Date
 
         public init(
-            fillID: FillID, orderID: OrderID, symbol: Symbol?, fee: Decimal, feeAsset: String,
+            fill: FillID, order: OrderID, symbol: Symbol?, fee: Decimal, feeAsset: String,
             source: Source, deductedFee: Decimal?, deductedFeeAsset: String?, filledAt: Date
         ) {
-            self.fillID = fillID
-            self.orderID = orderID
+            self.fill = fill
+            self.order = order
             self.symbol = symbol
             self.fee = fee
             self.feeAsset = feeAsset
@@ -60,8 +60,8 @@ extension MexcFutures.FeeDeduction: Decodable {
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        fillID = try container.decode(MexcFutures.FillID.self, forKey: .id)
-        orderID = try container.decode(MexcFutures.OrderID.self, forKey: .orderId)
+        fill = try container.decode(MexcFutures.FillID.self, forKey: .id)
+        order = try container.decode(MexcFutures.OrderID.self, forKey: .orderId)
         symbol = try container.decodeIfPresent(MexcFutures.Symbol.self, forKey: .symbol)
         fee = try container.decimal(forKey: .fee)
         feeAsset = try container.decode(String.self, forKey: .feeCurrency)

@@ -3,8 +3,8 @@ public import Foundation
 // MARK: - Model
 
 extension MexcFutures {
-    /// An order to place, built with ``open(_:_:_:volume:leverage:margin:takeProfit:stopLoss:externalID:options:)``
-    /// or ``close(_:_:_:volume:margin:position:externalID:options:)``, which take only what each kind of
+    /// An order to place, built with ``open(_:_:_:volume:leverage:marginMode:takeProfit:stopLoss:externalID:options:)``
+    /// or ``close(_:_:_:volume:marginMode:position:externalID:options:)``, which take only what each kind of
     /// order carries.
     ///
     /// Volumes are in contracts. Build prices and volumes with `Decimal(string:)` or integer literals:
@@ -32,24 +32,24 @@ extension MexcFutures {
         /// Opens a position, or adds to one.
         public static func open(
             _ direction: Direction, _ symbol: Symbol, _ pricing: Pricing, volume: Decimal, leverage: Int,
-            margin: MarginMode, takeProfit: AttachedStop? = nil, stopLoss: AttachedStop? = nil,
+            marginMode: MarginMode, takeProfit: AttachedStop? = nil, stopLoss: AttachedStop? = nil,
             externalID: ExternalOrderID? = nil, options: Options = .init()
         ) -> Self {
             Self(
                 symbol: symbol, side: direction == .long ? .openLong : .openShort, pricing: pricing, volume: volume,
-                leverage: leverage, marginMode: margin, takeProfit: takeProfit, stopLoss: stopLoss,
+                leverage: leverage, marginMode: marginMode, takeProfit: takeProfit, stopLoss: stopLoss,
                 externalID: externalID, position: nil, options: options
             )
         }
 
         /// Reduces or closes a position; `direction` is the position's.
         public static func close(
-            _ direction: Direction, _ symbol: Symbol, _ pricing: Pricing, volume: Decimal, margin: MarginMode,
+            _ direction: Direction, _ symbol: Symbol, _ pricing: Pricing, volume: Decimal, marginMode: MarginMode,
             position: PositionID? = nil, externalID: ExternalOrderID? = nil, options: Options = .init()
         ) -> Self {
             Self(
                 symbol: symbol, side: direction == .long ? .closeLong : .closeShort, pricing: pricing, volume: volume,
-                leverage: nil, marginMode: margin, takeProfit: nil, stopLoss: nil, externalID: externalID,
+                leverage: nil, marginMode: marginMode, takeProfit: nil, stopLoss: nil, externalID: externalID,
                 position: position, options: options
             )
         }

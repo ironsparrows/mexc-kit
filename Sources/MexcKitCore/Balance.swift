@@ -27,9 +27,9 @@ extension MexcFutures {
         /// MEXC's "usable amount".
         public let availableToOpen: Decimal?
         /// MEXC's trial bonus.
-        public let bonus: Decimal?
+        public let trialBonus: Decimal?
         /// When the trial bonus expires.
-        public let bonusExpiresAt: Date?
+        public let trialBonusExpiresAt: Date?
         /// MEXC's "debt amount".
         public let debt: Decimal?
         /// MEXC's "contributed effective margin".
@@ -38,7 +38,7 @@ extension MexcFutures {
         public init(
             asset: String, available: Decimal, frozen: Decimal, positionMargin: Decimal, cash: Decimal,
             equity: Decimal, unrealizedProfit: Decimal, transferable: Decimal?, availableToOpen: Decimal?,
-            bonus: Decimal?, bonusExpiresAt: Date?, debt: Decimal?, contributedMargin: Decimal?
+            trialBonus: Decimal?, trialBonusExpiresAt: Date?, debt: Decimal?, contributedMargin: Decimal?
         ) {
             self.asset = asset
             self.available = available
@@ -49,8 +49,8 @@ extension MexcFutures {
             self.unrealizedProfit = unrealizedProfit
             self.transferable = transferable
             self.availableToOpen = availableToOpen
-            self.bonus = bonus
-            self.bonusExpiresAt = bonusExpiresAt
+            self.trialBonus = trialBonus
+            self.trialBonusExpiresAt = trialBonusExpiresAt
             self.debt = debt
             self.contributedMargin = contributedMargin
         }
@@ -76,8 +76,8 @@ extension MexcFutures.Balance: Decodable {
         unrealizedProfit = try container.decimal(forKey: .unrealized)
         transferable = try container.decimalIfPresent(forKey: .availableCash)
         availableToOpen = try container.decimalIfPresent(forKey: .availableOpen)
-        bonus = try container.decimalIfPresent(forKey: .bonus)
-        bonusExpiresAt = try container.millisecondDateIfPresent(forKey: .bonusExpireTime)
+        trialBonus = try container.decimalIfPresent(forKey: .bonus)
+        trialBonusExpiresAt = try container.millisecondDateIfPresent(forKey: .bonusExpireTime)
         debt = try container.decimalIfPresent(forKey: .debtAmount)
         contributedMargin = try container.decimalIfPresent(forKey: .contributeMarginAmount)
     }

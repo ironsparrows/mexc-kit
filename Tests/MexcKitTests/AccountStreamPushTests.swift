@@ -222,6 +222,14 @@ struct AccountStreamPushTests {
         #expect(mode == .oneWay)
     }
 
+    @Test func `a leverage mode push of -1, no mode, is skipped`() async throws {
+        let modes = Task { [streams] in try await AccountStreamSupport.take(1, from: streams.leverageModes()) }
+        try await logIn()
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.leverage.mode", .leverageMode(.with { $0.lm = -1 }))))
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.leverage.mode", .leverageMode(.with { $0.lm = 2 }))))
+        #expect(try await modes.value == [.simple])
+    }
+
     @Test func `a leverage mode push decodes the new mode`() async throws {
         let mode = try await first(of: streams.leverageModes(), push: .leverageMode(.with { $0.lm = 1 }), on: "leverage.mode")
         #expect(mode == .advanced)

@@ -17,14 +17,14 @@ extension MexcFutures {
         /// The margin held by open positions.
         public let positionMargin: Decimal
         /// MEXC's trial bonus; `nil` when the push leaves it out.
-        public let bonus: Decimal?
+        public let trialBonus: Decimal?
 
-        public init(asset: String, available: Decimal, frozen: Decimal, positionMargin: Decimal, bonus: Decimal?) {
+        public init(asset: String, available: Decimal, frozen: Decimal, positionMargin: Decimal, trialBonus: Decimal?) {
             self.asset = asset
             self.available = available
             self.frozen = frozen
             self.positionMargin = positionMargin
-            self.bonus = bonus
+            self.trialBonus = trialBonus
         }
     }
 }

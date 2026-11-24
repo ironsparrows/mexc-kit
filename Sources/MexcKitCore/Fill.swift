@@ -10,7 +10,7 @@ extension MexcFutures {
     public struct Fill: Hashable, Sendable {
         public let id: FillID
         public let symbol: Symbol
-        public let orderID: OrderID?
+        public let order: OrderID?
         public let side: OrderSide
         public let price: Decimal
         public let volume: Decimal
@@ -27,13 +27,13 @@ extension MexcFutures {
         public let filledAt: Date
 
         public init(
-            id: FillID, symbol: Symbol, orderID: OrderID?, side: OrderSide, price: Decimal, volume: Decimal,
+            id: FillID, symbol: Symbol, order: OrderID?, side: OrderSide, price: Decimal, volume: Decimal,
             fee: Decimal, feeAsset: String, profit: Decimal?, category: OrderCategory?, isTaker: Bool?,
             positionMode: PositionMode?, filledAt: Date
         ) {
             self.id = id
             self.symbol = symbol
-            self.orderID = orderID
+            self.order = order
             self.side = side
             self.price = price
             self.volume = volume
@@ -60,7 +60,7 @@ extension MexcFutures.Fill: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(MexcFutures.FillID.self, forKey: .id)
         symbol = try container.decode(MexcFutures.Symbol.self, forKey: .symbol)
-        orderID = try container.decodeIfPresent(MexcFutures.OrderID.self, forKey: .orderId)
+        order = try container.decodeIfPresent(MexcFutures.OrderID.self, forKey: .orderId)
         side = try container.decode(MexcFutures.OrderSide.self, forKey: .side)
         price = try container.decimal(forKey: .price)
         volume = try container.decimal(forKey: .vol)
@@ -68,10 +68,12 @@ extension MexcFutures.Fill: Decodable {
         feeAsset = try container.decode(String.self, forKey: .feeCurrency)
         profit = try container.decimalIfPresent(forKey: .profit)
         category = try container.decodeIfPresent(MexcFutures.OrderCategory.self, forKey: .category)
+            .flatMap { $0.rawValue == 0 ? nil : $0 }
         // The examples send `taker`; the field tables name it `isTaker`.
         isTaker = try container.decodeIfPresent(Bool.self, forKey: .taker)
             ?? container.decodeIfPresent(Bool.self, forKey: .isTaker)
         positionMode = try container.decodeIfPresent(MexcFutures.PositionMode.self, forKey: .positionMode)
+            .flatMap { $0.rawValue == 0 ? nil : $0 }
         filledAt = try container.millisecondDate(forKey: .timestamp)
     }
 }

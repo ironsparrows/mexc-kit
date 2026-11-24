@@ -11,7 +11,7 @@ struct OrderEndpointsTests {
 
     @Test func `placing an order sends the documented fields and decodes the ID`() async throws {
         let request = MexcFutures.OrderRequest.open(
-            .long, "BTC_USDT", .limit(price: Decimal(string: "60000.5")!), volume: 10, leverage: 20, margin: .isolated,
+            .long, "BTC_USDT", .limit(price: Decimal(string: "60000.5")!), volume: 10, leverage: 20, marginMode: .isolated,
             takeProfit: .init(price: 64000, source: .fair), stopLoss: .init(price: 58000),
             externalID: "grid-7", options: .init(reduceOnly: true, positionMode: .oneWay, triggerProtection: true)
         )
@@ -32,7 +32,7 @@ struct OrderEndpointsTests {
 
     @Test func `a market close leaves out the price, the leverage and unset options`() async throws {
         let request = MexcFutures.OrderRequest.close(
-            .short, "BTC_USDT", .market, volume: 3, margin: .cross, position: .init(rawValue: "1109973831")
+            .short, "BTC_USDT", .market, volume: 3, marginMode: .cross, position: .init(rawValue: "1109973831")
         )
         let (_, sent) = try await call(
             json: #"{"success":true,"code":0,"data":{"orderId":"1","ts":1}}"#
@@ -42,7 +42,7 @@ struct OrderEndpointsTests {
 
     @Test func `a best-price order is a limit order with its level and no price`() async throws {
         let request = MexcFutures.OrderRequest.open(
-            .short, "ETH_USDT", .bestPrice(.opposite5), volume: 1, leverage: 5, margin: .cross,
+            .short, "ETH_USDT", .bestPrice(.opposite5), volume: 1, leverage: 5, marginMode: .cross,
             options: .init(marketCeiling: true, flashClose: true, selfTradePrevention: .cancelMaker)
         )
         let (_, sent) = try await call(
@@ -56,9 +56,9 @@ struct OrderEndpointsTests {
 
     @Test func `a batch sends an array with a self-trade mode on every order and reads each result`() async throws {
         let requests: [MexcFutures.OrderRequest] = [
-            .open(.long, "BTC_USDT", .postOnly(price: 50000), volume: 1, leverage: 10, margin: .isolated),
+            .open(.long, "BTC_USDT", .postOnly(price: 50000), volume: 1, leverage: 10, marginMode: .isolated),
             .open(
-                .long, "BTC_USDT", .postOnly(price: 49000), volume: 1, leverage: 10, margin: .isolated,
+                .long, "BTC_USDT", .postOnly(price: 49000), volume: 1, leverage: 10, marginMode: .isolated,
                 options: .init(selfTradePrevention: .cancelTaker)
             ),
         ]
@@ -102,14 +102,14 @@ struct OrderEndpointsTests {
 
     @Test(arguments: [
         MexcFutures.OrderRequest.open(
-            .long, "BTC_USDT", .limit(price: 1), volume: 1, leverage: 1, margin: .cross, takeProfit: .init(price: 2)
+            .long, "BTC_USDT", .limit(price: 1), volume: 1, leverage: 1, marginMode: .cross, takeProfit: .init(price: 2)
         ),
-        .open(.long, "BTC_USDT", .limit(price: 1), volume: 1, leverage: 1, margin: .cross, stopLoss: .init(price: 1)),
+        .open(.long, "BTC_USDT", .limit(price: 1), volume: 1, leverage: 1, marginMode: .cross, stopLoss: .init(price: 1)),
         .open(
-            .long, "BTC_USDT", .limit(price: 1), volume: 1, leverage: 1, margin: .cross,
+            .long, "BTC_USDT", .limit(price: 1), volume: 1, leverage: 1, marginMode: .cross,
             options: .init(triggerProtection: true)
         ),
-        .open(.long, "BTC_USDT", .bestPrice(.opposite1), volume: 1, leverage: 1, margin: .cross),
+        .open(.long, "BTC_USDT", .bestPrice(.opposite1), volume: 1, leverage: 1, marginMode: .cross),
     ])
     func `a batch order MEXC's batch can't carry throws before anything is sent`(
         request: MexcFutures.OrderRequest
@@ -125,7 +125,7 @@ struct OrderEndpointsTests {
     @Test func `a best-price order with an external ID throws before anything is sent`() async throws {
         let transport = FakeTransport()
         let request = MexcFutures.OrderRequest.close(
-            .long, "BTC_USDT", .bestPrice(.sameSide1), volume: 1, margin: .cross, externalID: "x"
+            .long, "BTC_USDT", .bestPrice(.sameSide1), volume: 1, marginMode: .cross, externalID: "x"
         )
         let error = try await #require(throws: MexcFutures.ClientError.self) {
             try await OrderEndpoints(rest: .test(transport: transport)).place(request)
@@ -158,6 +158,20 @@ struct OrderEndpointsTests {
             try await OrderEndpoints(rest: .test(transport: transport)).cancel(MexcFutures.OrderID(rawValue: "1"))
         }
         #expect(error.code == .orderNotCancellable)
+    }
+
+    @Test func `a fill's and an order's 0 for category and position mode are none, as in the stream`() throws {
+        let fill = try JSONDecoder().decode(MexcFutures.Fill.self, from: Data(#"""
+            {"id":"1","symbol":"ETH_USDT","side":2,"vol":1,"price":1208.35,"feeCurrency":"USDT","fee":0.01,
+             "timestamp":1609992674000,"category":0,"positionMode":0,"taker":true}
+            """#.utf8))
+        #expect(fill.category == nil && fill.positionMode == nil)
+        let order = try JSONDecoder().decode(MexcFutures.Order.self, from: Data(#"""
+            {"orderId":"9","symbol":"DOGE_USDT","positionId":0,"price":0.2,"vol":1,"leverage":20,"side":1,
+             "category":1,"orderType":1,"dealVol":0,"orderMargin":0.01,"takerFee":0,"makerFee":0,"profit":0,
+             "feeCurrency":"USDT","openType":1,"state":4,"positionMode":0,"createTime":1}
+            """#.utf8))
+        #expect(order.positionMode == nil)
     }
 
     @Test func `getting or canceling no orders sends nothing`() async throws {
@@ -305,7 +319,7 @@ struct OrderEndpointsTests {
             https://api.mexc.com/api/v1/private/order/list/order_deals/v3?page_num=1&page_size=20&symbol=DOGE_USDT
             """)
         #expect(fills.first == .init(
-            id: .init(rawValue: "9466823344"), symbol: "DOGE_USDT", orderID: .init(rawValue: "739211854408619008"),
+            id: .init(rawValue: "9466823344"), symbol: "DOGE_USDT", order: .init(rawValue: "739211854408619008"),
             side: .openShort, price: Decimal(string: "0.18695")!, volume: 1, fee: 0, feeAsset: "USDT", profit: 0,
             category: .limit, isTaker: true, positionMode: .hedge,
             filledAt: Date(timeIntervalSince1970: 1_761_912_240)

@@ -28,11 +28,11 @@ extension LiveTrading {
             let options = MexcFutures.OrderRequest.Options(positionMode: try await client.account.positionMode())
             let volume = contract.minimumVolume
             _ = try await client.order.place(
-                .open(.long, Self.btc, .market, volume: volume, leverage: 5, margin: .isolated, options: options)
+                .open(.long, Self.btc, .market, volume: volume, leverage: 5, marginMode: .isolated, options: options)
             )
             let position = try #require(try await client.position.list(Self.btc).first { $0.side == .long })
             _ = try await client.order.place(
-                .close(.long, Self.btc, .market, volume: volume, margin: .isolated, position: position.id, options: options)
+                .close(.long, Self.btc, .market, volume: volume, marginMode: .isolated, position: position.id, options: options)
             )
 
             #expect(try await orders.allSatisfy { $0.symbol == Self.btc && $0.volume == volume })
@@ -54,7 +54,7 @@ extension LiveTrading {
             let options = MexcFutures.OrderRequest.Options(positionMode: mode)
             let volume = contract.minimumVolume
             _ = try await client.order.place(
-                .open(.long, Self.btc, .market, volume: volume, leverage: 5, margin: .isolated, options: options)
+                .open(.long, Self.btc, .market, volume: volume, leverage: 5, marginMode: .isolated, options: options)
             )
             let position = try #require(try await client.position.list(Self.btc).first { $0.side == .long })
 
@@ -63,18 +63,18 @@ extension LiveTrading {
                 stopLoss: .market(at: contract.round(price: last * Decimal(string: "0.9")!, rule: .down))
             ))
             let trailingOrder = try await client.trailingOrder.place(.close(
-                .long, Self.btc, volume: volume, leverage: 5, margin: .isolated, callback: .percentage(Decimal(string: "0.05")!),
+                .long, Self.btc, volume: volume, leverage: 5, marginMode: .isolated, callback: .percentage(Decimal(string: "0.05")!),
                 activationPrice: contract.round(price: last * Decimal(string: "1.5")!, rule: .up),
                 positionMode: mode
             ))
             let plan = try await client.planOrder.place(.open(
-                .long, Self.btc, .market, volume: volume, leverage: 5, margin: .isolated,
+                .long, Self.btc, .market, volume: volume, leverage: 5, marginMode: .isolated,
                 trigger: .init(price: contract.round(price: last * Decimal(string: "1.5")!, rule: .up), condition: .atOrAbove),
                 lifetime: .oneDay, options: .init(positionMode: mode)
             ))
             let limit = try await client.order.place(.open(
                 .long, Self.btc, .limit(price: contract.round(price: last * Decimal(string: "0.9")!, rule: .down)),
-                volume: volume, leverage: 5, margin: .isolated, options: options
+                volume: volume, leverage: 5, marginMode: .isolated, options: options
             ))
             try await client.stopOrder.setAttachedStops(
                 of: limit.id, takeProfit: .init(price: contract.round(price: last, rule: .up)),
@@ -86,7 +86,7 @@ extension LiveTrading {
             try await client.trailingOrder.cancel(trailingOrder, in: Self.btc)
             try await client.planOrder.cancel(plan, in: Self.btc)
             _ = try await client.order.place(
-                .close(.long, Self.btc, .market, volume: volume, margin: .isolated, position: position.id, options: options)
+                .close(.long, Self.btc, .market, volume: volume, marginMode: .isolated, position: position.id, options: options)
             )
 
             #expect(try await stops.allSatisfy { $0.symbol == Self.btc })

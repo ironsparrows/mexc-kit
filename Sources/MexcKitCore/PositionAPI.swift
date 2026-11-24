@@ -32,7 +32,7 @@ extension MexcFutures {
         /// The leverage of each side and margin mode in one market for a sub-account, by its name. Needs
         /// the master account's key. MEXC returns the market's default leverage for a side without a
         /// position.
-        func leverage(_ symbol: Symbol, subaccount: String) async throws -> [LeverageSetting]
+        func leverage(_ symbol: Symbol, subAccount: String) async throws -> [LeverageSetting]
 
         /// Sets the leverage of an open position. MEXC allows 10 leverage changes in 10 seconds.
         func setLeverage(_ leverage: Int, of position: PositionID) async throws

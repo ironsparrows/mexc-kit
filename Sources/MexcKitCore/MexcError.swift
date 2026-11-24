@@ -8,7 +8,7 @@ public import Foundation
 /// `localizedDescription` is MEXC's message. When the response has none, it is the message MEXC's
 /// futures documentation gives for the code, or ``description`` for a code it doesn't list.
 /// `recoverySuggestion` is the documentation's explanation of the code.
-public struct MexcError: Error, Sendable, CustomStringConvertible {
+public struct MexcError: Error, Hashable, Sendable, CustomStringConvertible {
     public var code: Code
     /// The message in MEXC's response.
     public var message: String?

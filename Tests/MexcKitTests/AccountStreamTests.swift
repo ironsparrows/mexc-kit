@@ -275,7 +275,7 @@ struct AccountStreamTests {
         let fill = try await first(of: StreamEndpoints.test(server, account: AccountStreamSupport.account).fills(), push: .orderDealDetail(Self.fill), on: "push.personal.order.deal")
         #expect(fill.id.rawValue == "987654321")
         #expect(fill.symbol == "BTC_USDT")
-        #expect(fill.orderID?.rawValue == "123456789")
+        #expect(fill.order?.rawValue == "123456789")
         #expect(fill.side == .openLong)
         #expect(fill.price == Decimal(string: "45000.5"))
         #expect(fill.volume == 10)
@@ -321,7 +321,7 @@ struct AccountStreamTests {
     @Test func `a balance push decodes its asset and amounts`() async throws {
         let balance = try await first(of: StreamEndpoints.test(server, account: AccountStreamSupport.account).balances(), push: .assetChange(Self.balance), on: "push.personal.asset")
         #expect(balance == MexcFutures.BalanceUpdate(
-            asset: "USDT", available: 9000, frozen: 1000, positionMargin: 5000, bonus: 100
+            asset: "USDT", available: 9000, frozen: 1000, positionMargin: 5000, trialBonus: 100
         ))
     }
 

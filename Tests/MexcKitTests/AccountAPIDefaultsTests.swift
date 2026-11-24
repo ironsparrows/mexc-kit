@@ -50,7 +50,7 @@ private struct RecordingAccount: MexcFutures.AccountAPI {
         throw CancellationError()
     }
     func positionMode() async throws -> MexcFutures.PositionMode { .hedge }
-    func positionMode(subaccount: String) async throws -> MexcFutures.PositionMode { .hedge }
+    func positionMode(subAccount: String) async throws -> MexcFutures.PositionMode { .hedge }
     func setPositionMode(_ mode: MexcFutures.PositionMode) async throws {}
     func setMultiAssetMode(_ enabled: Bool) async throws {}
 

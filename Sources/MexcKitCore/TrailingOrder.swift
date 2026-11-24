@@ -126,6 +126,7 @@ extension MexcFutures.TrailingOrder: Decodable {
         referencePrice = try container.decimalIfPresent(forKey: .markPrice)
         triggerPrice = try container.decimalIfPresent(forKey: .triggerPrice)
         triggerCondition = try container.decodeIfPresent(MexcFutures.TriggerCondition.self, forKey: .triggerType)
+            .flatMap { $0.rawValue == 0 ? nil : $0 }
         state = try container.decode(MexcFutures.TrailingOrderState.self, forKey: .state)
         order = try container.nonZeroIfPresent(MexcFutures.OrderID.self, forKey: .orderId)
         errorCode = try container.decodeIfPresent(Int.self, forKey: .errorCode)

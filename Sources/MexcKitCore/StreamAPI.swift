@@ -152,8 +152,8 @@ extension MexcFutures {
         /// The account's risk limit tiers on the given markets, or on every market for an empty set,
         /// each time one changes.
         ///
-        /// The tier's maximum leverage is as MEXC sends it; its `.proto` gives -1 as the value when
-        /// none is set. Every change reaches a consumer that falls behind.
+        /// The tier's maximum leverage is as MEXC sends it, which can be -1, MEXC's value when none is
+        /// set. Every change reaches a consumer that falls behind.
         func riskLimits(_ symbols: Set<Symbol>) -> AsyncThrowingStream<PositionRiskLimit, any Error>
 
         /// How close the account's positions on the given markets, or on every market for an empty
@@ -175,8 +175,8 @@ extension MexcFutures {
 
         /// The account's leverage mode, each time it changes.
         ///
-        /// The mode is as MEXC sends it; its `.proto` gives -1 as the value when none is set. Every
-        /// change reaches a consumer that falls behind.
+        /// A push of -1, MEXC's value when no mode is set, isn't streamed. Every change reaches a
+        /// consumer that falls behind.
         func leverageModes() -> AsyncThrowingStream<LeverageMode, any Error>
 
         /// The account's trial bonus, each time it changes. Every change reaches a consumer that falls

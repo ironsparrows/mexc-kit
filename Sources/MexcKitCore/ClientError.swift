@@ -74,8 +74,9 @@ extension MexcFutures.ClientError {
         public static let acknowledgementTimedOut = Self(
             "acknowledgementTimedOut", summary: "MEXC didn't acknowledge the stream request in time"
         )
-        /// The stream connection closed.
-        public static let connectionClosed = Self("connectionClosed", summary: "The stream connection closed")
+        /// A stream connection that closed couldn't send. The connection reconnects on its own, so this
+        /// never reaches a stream.
+        package static let connectionClosed = Self("connectionClosed", summary: "The stream connection closed")
         /// MEXC didn't answer a request within the configured timeout.
         ///
         /// The request may still have reached MEXC. Before repeating one that changes something, such

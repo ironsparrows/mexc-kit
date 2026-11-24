@@ -66,9 +66,9 @@ struct PositionEndpoints: MexcFutures.PositionAPI {
         let _: NoData = try await rest.send(.post("/api/v1/private/position/close_all", .json(EmptyObject())))
     }
 
-    func leverage(_ symbol: MexcFutures.Symbol, subaccount: String) async throws -> [MexcFutures.LeverageSetting] {
+    func leverage(_ symbol: MexcFutures.Symbol, subAccount: String) async throws -> [MexcFutures.LeverageSetting] {
         try await rest.send(.get("/api/v1/private/position/leverage/subaccount", query: [
-            "subAccount": subaccount,
+            "subAccount": subAccount,
             "symbol": symbol.rawValue,
         ], authentication: .signed))
     }

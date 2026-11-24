@@ -163,7 +163,7 @@ struct PositionEndpointsTests {
 
     @Test func `a sub-account's leverage`() async throws {
         let (settings, url) = try await call(fixture: "Position/leverage_subaccount") {
-            try await $0.leverage("BTC_USDT", subaccount: "mexc_sub_01")
+            try await $0.leverage("BTC_USDT", subAccount: "mexc_sub_01")
         }
         #expect(url == """
             https://api.mexc.com/api/v1/private/position/leverage/subaccount?subAccount=mexc_sub_01&symbol=BTC_USDT

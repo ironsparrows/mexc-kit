@@ -12,7 +12,7 @@ struct TrailingOrderEndpointsTests {
 
     @Test func `placing an opening trailing order`() async throws {
         let request = MexcFutures.TrailingOrderRequest.open(
-            .short, "BTC_USDT", volume: 3, leverage: 10, margin: .cross, callback: .percentage(Decimal(string: "0.02")!),
+            .short, "BTC_USDT", volume: 3, leverage: 10, marginMode: .cross, callback: .percentage(Decimal(string: "0.02")!),
             activationPrice: 61000, source: .fair, positionMode: .hedge
         )
         let (id, sent) = try await call(fixture: "TrailingOrder/place") { try await $0.place(request) }
@@ -27,7 +27,7 @@ struct TrailingOrderEndpointsTests {
 
     @Test func `placing a closing trailing order`() async throws {
         let request = MexcFutures.TrailingOrderRequest.close(
-            .long, "BTC_USDT", volume: 1, leverage: 5, margin: .isolated, callback: .distance(500),
+            .long, "BTC_USDT", volume: 1, leverage: 5, marginMode: .isolated, callback: .distance(500),
             positionMode: .oneWay, reduceOnly: true
         )
         let (_, sent) = try await call(fixture: "TrailingOrder/place") { try await $0.place(request) }

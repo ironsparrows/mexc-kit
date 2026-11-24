@@ -4,8 +4,8 @@ public import Foundation
 
 extension MexcFutures {
     /// A trailing order to place, built with
-    /// ``open(_:_:volume:leverage:margin:callback:activationPrice:source:positionMode:)`` or
-    /// ``close(_:_:volume:leverage:margin:callback:activationPrice:source:positionMode:reduceOnly:)``.
+    /// ``open(_:_:volume:leverage:marginMode:callback:activationPrice:source:positionMode:)`` or
+    /// ``close(_:_:volume:leverage:marginMode:callback:activationPrice:source:positionMode:reduceOnly:)``.
     ///
     /// Volumes are in contracts. MEXC requires the account's position mode on every trailing order.
     public struct TrailingOrderRequest: Hashable, Sendable {
@@ -25,13 +25,13 @@ extension MexcFutures {
 
         /// Opens a position, or adds to one, once the price moves back by the callback.
         public static func open(
-            _ direction: OrderRequest.Direction, _ symbol: Symbol, volume: Decimal, leverage: Int, margin: MarginMode,
+            _ direction: OrderRequest.Direction, _ symbol: Symbol, volume: Decimal, leverage: Int, marginMode: MarginMode,
             callback: TrailingOrder.Callback, activationPrice: Decimal? = nil, source: PriceSource = .last,
             positionMode: PositionMode
         ) -> Self {
             Self(
                 symbol: symbol, side: direction == .long ? .openLong : .openShort, volume: volume, leverage: leverage,
-                marginMode: margin, callback: callback, activationPrice: activationPrice, source: source,
+                marginMode: marginMode, callback: callback, activationPrice: activationPrice, source: source,
                 positionMode: positionMode, reduceOnly: false
             )
         }
@@ -39,13 +39,13 @@ extension MexcFutures {
         /// Reduces or closes a position once the price moves back by the callback; `direction` is the
         /// position's. MEXC requires the leverage here too.
         public static func close(
-            _ direction: OrderRequest.Direction, _ symbol: Symbol, volume: Decimal, leverage: Int, margin: MarginMode,
+            _ direction: OrderRequest.Direction, _ symbol: Symbol, volume: Decimal, leverage: Int, marginMode: MarginMode,
             callback: TrailingOrder.Callback, activationPrice: Decimal? = nil, source: PriceSource = .last,
             positionMode: PositionMode, reduceOnly: Bool = false
         ) -> Self {
             Self(
                 symbol: symbol, side: direction == .long ? .closeLong : .closeShort, volume: volume, leverage: leverage,
-                marginMode: margin, callback: callback, activationPrice: activationPrice, source: source,
+                marginMode: marginMode, callback: callback, activationPrice: activationPrice, source: source,
                 positionMode: positionMode, reduceOnly: reduceOnly
             )
         }

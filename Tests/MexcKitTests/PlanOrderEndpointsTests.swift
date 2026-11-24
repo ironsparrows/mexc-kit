@@ -12,7 +12,7 @@ struct PlanOrderEndpointsTests {
 
     @Test func `placing an opening plan order sends every field that is set`() async throws {
         let request = MexcFutures.PlanOrderRequest.open(
-            .long, "BTC_USDT", .limit(price: Decimal(string: "61000.5")!), volume: 2, leverage: 10, margin: .isolated,
+            .long, "BTC_USDT", .limit(price: Decimal(string: "61000.5")!), volume: 2, leverage: 10, marginMode: .isolated,
             trigger: .init(price: 61000, condition: .atOrAbove, source: .fair), lifetime: .sevenDays,
             takeProfit: .init(price: 64000), stopLoss: .init(price: 58000, source: .index),
             options: .init(reduceOnly: true, positionMode: .oneWay, triggerProtection: true)
@@ -30,7 +30,7 @@ struct PlanOrderEndpointsTests {
 
     @Test func `placing a closing market plan order sends no price, leverage or options`() async throws {
         let request = MexcFutures.PlanOrderRequest.close(
-            .short, "BTC_USDT", .market, volume: 1, margin: .cross,
+            .short, "BTC_USDT", .market, volume: 1, marginMode: .cross,
             trigger: .init(price: 58000, condition: .atOrBelow), lifetime: .oneDay
         )
         let (_, sent) = try await call(fixture: "PlanOrder/place") { try await $0.place(request) }
@@ -44,7 +44,7 @@ struct PlanOrderEndpointsTests {
         let transport = FakeTransport()
         let endpoints = PlanOrderEndpoints(rest: .test(transport: transport))
         let request = MexcFutures.PlanOrderRequest.open(
-            .long, "BTC_USDT", .bestPrice(.opposite1), volume: 1, leverage: 5, margin: .isolated,
+            .long, "BTC_USDT", .bestPrice(.opposite1), volume: 1, leverage: 5, marginMode: .isolated,
             trigger: .init(price: 1, condition: .atOrAbove), lifetime: .oneDay
         )
         let place = try await #require(throws: MexcFutures.ClientError.self) { try await endpoints.place(request) }

@@ -50,7 +50,7 @@ enum DocumentationExamples {
         // A buy 5% below the market rests in the book.
         let placed = try await client.order.place(.open(
             .long, "BTC_USDT", .limit(price: contract.round(price: lastPrice * Decimal(string: "0.95")!, rule: .down)),
-            volume: contract.minimumVolume, leverage: 5, margin: .isolated, options: options
+            volume: contract.minimumVolume, leverage: 5, marginMode: .isolated, options: options
         ))
         try await client.order.cancel(placed.id)
     }

@@ -11,13 +11,13 @@ struct OrderRequestTests {
     func `opening and closing pick MEXC's order side`(
         direction: MexcFutures.OrderRequest.Direction, opening: MexcFutures.OrderSide, closing: MexcFutures.OrderSide
     ) {
-        #expect(MexcFutures.OrderRequest.open(direction, "BTC_USDT", .market, volume: 1, leverage: 5, margin: .cross).side == opening)
-        #expect(MexcFutures.OrderRequest.close(direction, "BTC_USDT", .market, volume: 1, margin: .cross).side == closing)
+        #expect(MexcFutures.OrderRequest.open(direction, "BTC_USDT", .market, volume: 1, leverage: 5, marginMode: .cross).side == opening)
+        #expect(MexcFutures.OrderRequest.close(direction, "BTC_USDT", .market, volume: 1, marginMode: .cross).side == closing)
     }
 
     @Test func `opening carries the leverage and stops; closing carries the position`() {
         let open = MexcFutures.OrderRequest.open(
-            .long, "BTC_USDT", .limit(price: 100), volume: 2, leverage: 20, margin: .isolated,
+            .long, "BTC_USDT", .limit(price: 100), volume: 2, leverage: 20, marginMode: .isolated,
             takeProfit: .init(price: 120), stopLoss: .init(price: 90, source: .fair)
         )
         #expect(open.leverage == 20)
@@ -26,7 +26,7 @@ struct OrderRequestTests {
         #expect(open.position == nil)
 
         let close = MexcFutures.OrderRequest.close(
-            .long, "BTC_USDT", .market, volume: 2, margin: .isolated, position: .init(rawValue: "9")
+            .long, "BTC_USDT", .market, volume: 2, marginMode: .isolated, position: .init(rawValue: "9")
         )
         #expect(close.leverage == nil)
         #expect(close.takeProfit == nil && close.stopLoss == nil)

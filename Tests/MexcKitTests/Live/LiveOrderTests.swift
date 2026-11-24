@@ -21,12 +21,12 @@ extension LiveTrading {
             let volume = contract.minimumVolume
 
             let opened = try await client.order.place(
-                .open(.long, Self.btc, .market, volume: volume, leverage: 5, margin: .isolated, options: options)
+                .open(.long, Self.btc, .market, volume: volume, leverage: 5, marginMode: .isolated, options: options)
             )
             let positions = try await client.position.list(Self.btc)
             let position = try #require(positions.first { $0.side == .long })
             let closed = try await client.order.place(
-                .close(.long, Self.btc, .market, volume: volume, margin: .isolated, position: position.id, options: options)
+                .close(.long, Self.btc, .market, volume: volume, marginMode: .isolated, position: position.id, options: options)
             )
 
             _ = try await client.order.get(opened.id)
@@ -49,7 +49,7 @@ extension LiveTrading {
             let placed = try await client.order.place(
                 .open(
                     .long, Self.btc, .postOnly(price: price), volume: contract.minimumVolume, leverage: 5,
-                    margin: .isolated, externalID: externalID, options: options
+                    marginMode: .isolated, externalID: externalID, options: options
                 )
             )
             // MEXC may answer a change with a new order ID, so each cancel below reports per order instead of

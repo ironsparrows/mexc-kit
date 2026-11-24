@@ -114,7 +114,8 @@ extension StreamEndpoints {
 
     func leverageModes() -> AsyncThrowingStream<MexcFutures.LeverageMode, any Error> {
         accountStream("leverage modes", channel: "leverage.mode", filterKey: nil, markets: []) { push in
-            guard case .leverageMode(let mode) = push.data else { return nil }
+            // -1 is MEXC's value when the account has no leverage mode set, which isn't a change.
+            guard case .leverageMode(let mode) = push.data, mode.lm != -1 else { return nil }
             return (nil, { MexcFutures.LeverageMode(rawValue: Int(try required(mode.hasLm, mode.lm, "lm"))) })
         }
     }
@@ -193,7 +194,7 @@ extension MexcFutures.Fill {
         self.init(
             id: MexcFutures.FillID(rawValue: try required(fill.id, "id")),
             symbol: MexcFutures.Symbol(rawValue: try required(fill.symbol, "symbol")),
-            orderID: fill.orderID.isEmpty ? nil : MexcFutures.OrderID(rawValue: fill.orderID),
+            order: fill.orderID.isEmpty ? nil : MexcFutures.OrderID(rawValue: fill.orderID),
             side: MexcFutures.OrderSide(rawValue: try requiredNonZero(fill.side, "side")),
             price: try .stream(fill.price, "price"),
             volume: try .stream(fill.vol, "vol"),
@@ -253,7 +254,7 @@ extension MexcFutures.BalanceUpdate {
             available: try .stream(balance.availableBalance, "availableBalance"),
             frozen: try .stream(balance.frozenBalance, "frozenBalance"),
             positionMargin: try .stream(balance.positionMargin, "positionMargin"),
-            bonus: try .streamIfPresent(balance.bonus, "bonus")
+            trialBonus: try .streamIfPresent(balance.bonus, "bonus")
         )
     }
 }

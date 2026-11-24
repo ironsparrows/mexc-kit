@@ -1,7 +1,7 @@
 extension MexcFutures {
     /// The outcome of one item of a batch request, which MEXC accepts as a whole and answers item by
     /// item.
-    public struct BatchResult<ID: Hashable & Sendable>: Sendable {
+    public struct BatchResult<ID: Hashable & Sendable>: Hashable, Sendable {
         /// The item's ID; `nil` when MEXC reports none.
         public let id: ID?
         /// Why MEXC refused the item; `nil` when it succeeded.

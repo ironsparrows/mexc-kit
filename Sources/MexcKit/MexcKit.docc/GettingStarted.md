@@ -52,7 +52,7 @@ let options = MexcFutures.OrderRequest.Options(positionMode: try await client.ac
 // A buy 5% below the market rests in the book.
 let placed = try await client.order.place(.open(
     .long, "BTC_USDT", .limit(price: contract.round(price: lastPrice * Decimal(string: "0.95")!, rule: .down)),
-    volume: contract.minimumVolume, leverage: 5, margin: .isolated, options: options
+    volume: contract.minimumVolume, leverage: 5, marginMode: .isolated, options: options
 ))
 try await client.order.cancel(placed.id)
 ```
@@ -60,8 +60,8 @@ try await client.order.cancel(placed.id)
 MEXC treats an order as placed in hedge mode unless its options say otherwise, so pass the
 account's position mode. MEXC rejects a limit price too far from the market price; 5% stays
 inside that limit. ``MexcFutures/OrderRequest`` builds every kind of order with
-``MexcFutures/OrderRequest/open(_:_:_:volume:leverage:margin:takeProfit:stopLoss:externalID:options:)``
-and ``MexcFutures/OrderRequest/close(_:_:_:volume:margin:position:externalID:options:)``. Plan, stop
+``MexcFutures/OrderRequest/open(_:_:_:volume:leverage:marginMode:takeProfit:stopLoss:externalID:options:)``
+and ``MexcFutures/OrderRequest/close(_:_:_:volume:marginMode:position:externalID:options:)``. Plan, stop
 and trailing orders have their own domains: `client.planOrder`, `client.stopOrder` and
 `client.trailingOrder`.
 

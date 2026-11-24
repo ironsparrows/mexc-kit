@@ -46,9 +46,9 @@ struct AccountEndpoints: MexcFutures.AccountAPI {
         try await rest.send(.get("/api/v1/private/position/position_mode", authentication: .signed))
     }
 
-    func positionMode(subaccount: String) async throws -> MexcFutures.PositionMode {
+    func positionMode(subAccount: String) async throws -> MexcFutures.PositionMode {
         let mode: SubaccountPositionMode = try await rest.send(.get(
-            "/api/v1/private/position/position_mode/subaccount", query: ["subAccount": subaccount],
+            "/api/v1/private/position/position_mode/subaccount", query: ["subAccount": subAccount],
             authentication: .signed
         ))
         return mode.positionMode
