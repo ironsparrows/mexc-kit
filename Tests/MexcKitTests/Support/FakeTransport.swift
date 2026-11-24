@@ -65,4 +65,9 @@ extension TransportRequest {
         }
         return lines.joined(separator: "\n")
     }
+
+    /// The body as text; empty without a body.
+    var bodyText: String {
+        body.map { String(decoding: $0, as: UTF8.self) } ?? ""
+    }
 }

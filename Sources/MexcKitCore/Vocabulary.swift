@@ -56,6 +56,10 @@ extension MexcFutures {
         public static let custodyClose = Self(rawValue: 3)
         /// MEXC's "ADL reduction".
         public static let autoDeleveraging = Self(rawValue: 4)
+        /// MEXC's "delivery order".
+        public static let delivery = Self(rawValue: 5)
+        /// MEXC's "forced liquidation hedge".
+        public static let liquidationHedge = Self(rawValue: 6)
     }
 
     /// Why MEXC rejected or ended an order, as reported on order updates.

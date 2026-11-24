@@ -5,7 +5,7 @@ import Testing
 @Suite("Identifiers")
 struct IdentifierTests {
     enum Identifier: CaseIterable, Sendable {
-        case order, externalOrder, position, planOrder, stopOrder, trailingOrder
+        case order, externalOrder, fill, position, planOrder, stopOrder, trailingOrder
     }
 
     @Test(arguments: Identifier.allCases)
@@ -26,10 +26,17 @@ struct IdentifierTests {
         #expect(try JSONDecoder().decode([MexcFutures.Symbol].self, from: data) == [symbol])
     }
 
+    @Test func `an external order ID is written as a string literal`() {
+        let id: MexcFutures.ExternalOrderID = "grid-7"
+        #expect(id == MexcFutures.ExternalOrderID(rawValue: "grid-7"))
+        #expect("\(id)" == "grid-7")
+    }
+
     private func roundTrip(_ identifier: Identifier, _ json: String) throws -> String {
         switch identifier {
         case .order: try roundTrip(MexcFutures.OrderID.self, json)
         case .externalOrder: try roundTrip(MexcFutures.ExternalOrderID.self, json)
+        case .fill: try roundTrip(MexcFutures.FillID.self, json)
         case .position: try roundTrip(MexcFutures.PositionID.self, json)
         case .planOrder: try roundTrip(MexcFutures.PlanOrderID.self, json)
         case .stopOrder: try roundTrip(MexcFutures.StopOrderID.self, json)

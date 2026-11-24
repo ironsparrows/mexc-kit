@@ -31,6 +31,10 @@ struct PublicSurfaceTests {
             MexcFutures.Transfer.self, MexcFutures.TransferDirection.self, MexcFutures.ProfitRate.self,
             MexcFutures.PositionRiskLimit.self, MexcFutures.Position.self, MexcFutures.PositionState.self,
             MexcFutures.FundingPayment.self, MexcFutures.LeverageSetting.self,
+            (any MexcFutures.OrderAPI).self, MexcFutures.OrderRequest.self, MexcFutures.OrderRequest.Pricing.self, MexcFutures.OrderRequest.Direction.self,
+            MexcFutures.OrderRequest.Options.self, MexcFutures.AttachedStop.self, MexcFutures.Order.self,
+            MexcFutures.Fill.self, MexcFutures.FillID.self, MexcFutures.PlacedOrder.self,
+            MexcFutures.PendingOrderCounts.self, MexcFutures.BatchResult<MexcFutures.OrderID>.self,
         ]
         _ = types
     }

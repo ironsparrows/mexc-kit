@@ -14,6 +14,23 @@ struct EnvelopeTests {
         #expect(try await Envelope.data(Int.self, from: response(json)) == 42)
     }
 
+    @Test(arguments: [
+        #"{"success":true,"code":0}"#,
+        #"{"success":true,"code":0,"data":[]}"#,
+        #"{"success":true,"code":0,"data":null}"#,
+    ])
+    func `an endpoint without data accepts a success with or without it`(json: String) async throws {
+        _ = try await Envelope.data(NoData.self, from: response(json))
+    }
+
+    @Test func `an endpoint without data still throws a failure`() async throws {
+        let error = try await mexcError(
+            from: response(#"{"success":false,"code":2041,"message":"order state cannot be cancelled"}"#),
+            as: NoData.self
+        )
+        #expect(error.code == .orderNotCancellable)
+    }
+
     @Test func `a failure with HTTP 200 throws MEXC's code and message`() async throws {
         let json = #"{"success":false,"code":1001,"message":"Contract does not exist"}"#
         let error = try await mexcError(from: response(json))
@@ -76,7 +93,9 @@ struct EnvelopeTests {
         TransportResponse(status: status, body: Data(json.utf8))
     }
 
-    private func mexcError(from response: TransportResponse) async throws -> MexcError {
-        try await #require(throws: MexcError.self) { try await Envelope.data(Int.self, from: response) }
+    private func mexcError<Value: Decodable & Sendable>(
+        from response: TransportResponse, as _: Value.Type = Int.self
+    ) async throws -> MexcError {
+        try await #require(throws: MexcError.self) { try await Envelope.data(Value.self, from: response) }
     }
 }

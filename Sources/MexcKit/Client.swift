@@ -10,6 +10,7 @@ extension MexcFutures {
         public let market: any MarketAPI
         public let account: any AccountAPI
         public let position: any PositionAPI
+        public let order: any OrderAPI
         let rest: RESTClient
         let clock: ServerClock
 
@@ -49,6 +50,7 @@ extension MexcFutures {
             market = MarketEndpoints(rest: rest)
             account = AccountEndpoints(rest: rest)
             position = PositionEndpoints(rest: rest)
+            order = OrderEndpoints(rest: rest)
         }
 
         /// Measures the offset between this device's clock and MEXC's, and applies it to the

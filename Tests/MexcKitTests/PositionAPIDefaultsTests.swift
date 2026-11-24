@@ -57,6 +57,10 @@ private struct RecordingPositions: MexcFutures.PositionAPI {
 
     func leverage(_ symbol: MexcFutures.Symbol) async throws -> [MexcFutures.LeverageSetting] { [] }
 
+    func reverse(_ position: MexcFutures.PositionID, in symbol: MexcFutures.Symbol, volume: Decimal) async throws {}
+
+    func closeAll() async throws {}
+
     private func describe(
         _ symbol: MexcFutures.Symbol?, _ side: MexcFutures.PositionSide?, _ start: Date?, _ end: Date?
     ) -> String {

@@ -20,10 +20,22 @@ extension MexcFutures {
         public var description: String { rawValue }
     }
 
-    /// An order ID the app chooses when it places an order, at most 32 characters.
+    /// An order ID the app chooses when it places an order, at most 32 characters, unique within its
+    /// market.
     ///
     /// MEXC rejects a longer one with ``MexcError/Code/externalOrderIDTooLong``.
-    public struct ExternalOrderID: RawRepresentable, Hashable, Sendable, Codable, CustomStringConvertible {
+    public struct ExternalOrderID: RawRepresentable, Hashable, Sendable, Codable, ExpressibleByStringLiteral,
+        CustomStringConvertible
+    {
+        public let rawValue: String
+        public init(rawValue: String) { self.rawValue = rawValue }
+        public init(stringLiteral value: String) { rawValue = value }
+        public init(from decoder: any Decoder) throws { rawValue = try FlexibleString(from: decoder).value }
+        public var description: String { rawValue }
+    }
+
+    /// A fill's ID, assigned by MEXC. Decodes from a JSON number or a string.
+    public struct FillID: RawRepresentable, Hashable, Sendable, Codable, CustomStringConvertible {
         public let rawValue: String
         public init(rawValue: String) { self.rawValue = rawValue }
         public init(from decoder: any Decoder) throws { rawValue = try FlexibleString(from: decoder).value }

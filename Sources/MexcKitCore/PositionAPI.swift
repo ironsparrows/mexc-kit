@@ -3,9 +3,10 @@ public import Foundation
 // MARK: - Protocol
 
 extension MexcFutures {
-    /// The account's positions: open positions, closed ones, funding payments and leverage.
+    /// The account's positions: open positions, closed ones, funding payments and leverage, and
+    /// reversing or closing them.
     ///
-    /// Every request needs credentials with MEXC's "View Order Details" permission.
+    /// Every request needs credentials. Reading needs MEXC's "View Order Details" permission.
     public protocol PositionAPI: Sendable {
         /// The open positions, filtered by the values that aren't `nil`.
         func list(_ symbol: Symbol?, position: PositionID?) async throws -> [Position]
@@ -25,6 +26,13 @@ extension MexcFutures {
 
         /// The leverage of each side and margin mode in one market.
         func leverage(_ symbol: Symbol) async throws -> [LeverageSetting]
+
+        /// Reverses `volume` of an open position in one market. Needs MEXC's "Order Placing"
+        /// permission.
+        func reverse(_ position: PositionID, in symbol: Symbol, volume: Decimal) async throws
+
+        /// Closes every open position. Needs MEXC's "Order Placing" permission.
+        func closeAll() async throws
     }
 }
 

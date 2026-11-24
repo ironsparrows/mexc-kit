@@ -55,6 +55,8 @@ struct VocabularyTests {
         ("OrderCategory.liquidationCustody", MexcFutures.OrderCategory.liquidationCustody.rawValue, 2),
         ("OrderCategory.custodyClose", MexcFutures.OrderCategory.custodyClose.rawValue, 3),
         ("OrderCategory.autoDeleveraging", MexcFutures.OrderCategory.autoDeleveraging.rawValue, 4),
+        ("OrderCategory.delivery", MexcFutures.OrderCategory.delivery.rawValue, 5),
+        ("OrderCategory.liquidationHedge", MexcFutures.OrderCategory.liquidationHedge.rawValue, 6),
         ("OrderErrorCode.normal", MexcFutures.OrderErrorCode.normal.rawValue, 0),
         ("OrderErrorCode.invalidParameter", MexcFutures.OrderErrorCode.invalidParameter.rawValue, 1),
         ("OrderErrorCode.insufficientBalance", MexcFutures.OrderErrorCode.insufficientBalance.rawValue, 2),

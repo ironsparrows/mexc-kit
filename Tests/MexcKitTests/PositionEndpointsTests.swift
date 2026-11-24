@@ -139,6 +139,28 @@ struct PositionEndpointsTests {
         })
     }
 
+    @Test func `reversing a position sends its ID as a number`() async throws {
+        let transport = FakeTransport(json: #"{"success":true,"code":0}"#)
+        try await PositionEndpoints(rest: .test(transport: transport)).reverse(
+            .init(rawValue: "1109973831"), in: "BTC_USDT", volume: Decimal(string: "2.5")!
+        )
+        let sent = try #require(await transport.requests.first)
+        #expect(sent.method == .post)
+        #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/reverse")
+        #expect(sent.bodyText == #"{"positionId":1109973831,"symbol":"BTC_USDT","vol":2.5}"#)
+        #expect(sent.headers.contains { $0.name == "Signature" })
+    }
+
+    @Test func `closing every position is a signed POST without a body`() async throws {
+        let transport = FakeTransport(json: #"{"success":true,"code":0,"data":[]}"#)
+        try await PositionEndpoints(rest: .test(transport: transport)).closeAll()
+        let sent = try #require(await transport.requests.first)
+        #expect(sent.method == .post)
+        #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/close_all")
+        #expect(sent.body == nil)
+        #expect(sent.headers.contains { $0.name == "Signature" })
+    }
+
     private func call<Value>(
         fixture: String, _ body: (PositionEndpoints) async throws -> Value
     ) async throws -> (Value, String) {

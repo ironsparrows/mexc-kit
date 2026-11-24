@@ -55,6 +55,15 @@ struct PositionEndpoints: MexcFutures.PositionAPI {
         ))
     }
 
+    func reverse(_ position: MexcFutures.PositionID, in symbol: MexcFutures.Symbol, volume: Decimal) async throws {
+        let body = Reversal(positionId: try NumericID(position), symbol: symbol, vol: volume)
+        let _: NoData = try await rest.send(.post("/api/v1/private/position/reverse", .json(body)))
+    }
+
+    func closeAll() async throws {
+        let _: NoData = try await rest.send(.post("/api/v1/private/position/close_all"))
+    }
+
     private static func milliseconds(_ date: Date) -> String {
         String(date.millisecondsSince1970)
     }
@@ -62,16 +71,8 @@ struct PositionEndpoints: MexcFutures.PositionAPI {
 
 // MARK: - Wire
 
-/// A list MEXC documents both as a bare array and as a page: its documentation lists page fields, and
-/// its example is an array. Either decodes to the items.
-private struct ArrayOrPage<Element: Decodable & Sendable>: Decodable, Sendable {
-    let items: [Element]
-
-    init(from decoder: any Decoder) throws {
-        if (try? decoder.unkeyedContainer()) != nil {
-            items = try [Element](from: decoder)
-        } else {
-            items = try MexcFutures.Page<Element>(from: decoder).items
-        }
-    }
+private struct Reversal: Encodable, Sendable {
+    let positionId: NumericID
+    let symbol: MexcFutures.Symbol
+    let vol: Decimal
 }

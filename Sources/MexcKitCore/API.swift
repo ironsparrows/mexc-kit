@@ -8,7 +8,9 @@ extension MexcFutures {
         var market: any MarketAPI { get }
         /// The futures account: balances, transfers, profit rate, risk limits and position mode.
         var account: any AccountAPI { get }
-        /// Open and closed positions, funding payments and leverage.
+        /// Open and closed positions, funding payments and leverage, and reversing or closing positions.
         var position: any PositionAPI { get }
+        /// Placing, changing, canceling and reading orders, and their fills.
+        var order: any OrderAPI { get }
     }
 }

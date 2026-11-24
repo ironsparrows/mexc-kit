@@ -53,7 +53,18 @@ enum Envelope {
                 ?? (try? container.decode(String.self, forKey: .code)).flatMap { Int($0) }
             message = (try? container.decode(String.self, forKey: .message))
                 ?? (try? container.decode(String.self, forKey: .msg))
-            data = Result { try container.decode(Value.self, forKey: .data) }
+            data = Result {
+                // An endpoint without data reads none, whatever MEXC sends.
+                if let nothing = NoData() as? Value { return nothing }
+                return try container.decode(Value.self, forKey: .data)
+            }
         }
     }
+}
+
+/// The response of an endpoint whose success has no `data` worth reading, such as
+/// `{"success": true, "code": 0}`. Any `data` MEXC does send is ignored.
+struct NoData: Decodable, Sendable {
+    init() {}
+    init(from decoder: any Decoder) {}
 }

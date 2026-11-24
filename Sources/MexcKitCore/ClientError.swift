@@ -55,6 +55,11 @@ extension MexcFutures.ClientError {
 
         public var description: String { name }
 
+        /// The request can't be sent as built, such as an order with an attached stop in a batch, or an
+        /// ID that isn't a number where MEXC takes a number. ``ClientError/message`` says which.
+        public static let invalidRequest = Self(
+            "invalidRequest", summary: "The request can't be sent to MEXC as built"
+        )
         /// A private endpoint or stream was called on a client without credentials.
         public static let missingCredentials = Self(
             "missingCredentials", summary: "The client has no API key and secret for a private request"
