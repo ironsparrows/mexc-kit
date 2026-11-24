@@ -11,6 +11,7 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
     }
 
     func place(_ requests: [MexcFutures.OrderRequest]) async throws -> [MexcFutures.BatchResult<MexcFutures.OrderID>] {
+        guard !requests.isEmpty else { return [] }
         let body = try requests.map { try OrderBody($0, inBatch: true) }
         let items: [BatchItem] = try await rest.send(.post("/api/v1/private/order/submit_batch", .json(body)))
         return items.map(\.result)
@@ -44,6 +45,7 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
     func cancel(
         externalIDs: [MexcFutures.ExternalOrderID], in symbol: MexcFutures.Symbol
     ) async throws -> [MexcFutures.BatchResult<MexcFutures.OrderID>] {
+        guard !externalIDs.isEmpty else { return [] }
         let body = externalIDs.map { ExternalOrder(symbol: symbol, externalOid: $0) }
         let items: [BatchItem] = try await rest.send(
             .post("/api/v1/private/order/batch_cancel_with_external", .json(body))
@@ -77,6 +79,7 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
     func get(
         externalIDs: [MexcFutures.ExternalOrderID], in symbol: MexcFutures.Symbol
     ) async throws -> [MexcFutures.Order] {
+        guard !externalIDs.isEmpty else { return [] }
         let body = externalIDs.map { ExternalOrder(symbol: symbol, externalOid: $0) }
         return try await rest.send(.post("/api/v1/private/order/batch_query_with_external", .json(body)))
     }

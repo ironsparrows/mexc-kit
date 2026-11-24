@@ -9,10 +9,11 @@ import SwiftProtobuf
 /// requests go up as JSON text frames, one at a time, each waiting for MEXC's acknowledgement before
 /// the next, because MEXC's error frame doesn't say which request failed; when one doesn't come in
 /// time, the connection starts over, since a late one couldn't be told from the next request's.
-/// Unsubscribe requests wait for nothing. Pushes come down as binary `ContractWrapper` frames, in order, to every consumer of
-/// their route. A JSON ping every 15 seconds keeps the connection open. After a drop it reconnects,
-/// waiting 1 second and doubling up to 60 seconds between attempts, and subscribes again to every
-/// route still consumed.
+/// Unsubscribe requests wait for nothing. Pushes come down as binary `ContractWrapper` frames, in
+/// order, to every consumer of their route; a public route's pushes only once MEXC acknowledges it.
+/// A JSON ping every 15 seconds keeps the connection open. After a drop it reconnects, waiting 1
+/// second and doubling up to 60 seconds between attempts, and subscribes again to every route still
+/// consumed. Starting over after missed acknowledgements waits the same way.
 ///
 /// A private connection logs in first and then sends one `personal.filter` naming every private
 /// channel its streams consume and their markets, sent again whenever that changes; MEXC
@@ -37,6 +38,8 @@ actor StreamConnection {
     /// The wait before a reconnect attempt, cancelled when the last stream ends.
     private var backoff: Task<Void, Never>?
     private var acknowledgement: PendingAcknowledgement?
+    /// Missed acknowledgements in a row, which make each start-over wait longer, as a reconnect does.
+    private var missedAcknowledgements = 0
     /// Whether MEXC accepted the login on the current private connection.
     private var isLoggedIn = false
     /// The `personal.filter` request last sent on the current private connection.
@@ -305,14 +308,16 @@ actor StreamConnection {
         let isConnected = self.link?.id == link.id
         switch outcome {
         case .success:
+            missedAcknowledgements = 0
             if isCurrent {
                 topics[route]?.wasSubscribed = true
                 if isConnected {
                     topics[route]?.state = .subscribed
                 }
-            } else if isConnected {
+            } else if isConnected, !unsubscribes.contains(subscription) {
                 // Its consumers ended while the request was in flight; a new topic on the route, if
-                // any, sends its own request.
+                // any, sends its own request. Ending them after the acknowledgement arrived already
+                // queued the unsubscribe.
                 unsubscribes.append(subscription)
             }
         case .failure(let error) where (error as? MexcFutures.ClientError)?.reason == .acknowledgementTimedOut:
@@ -323,8 +328,10 @@ actor StreamConnection {
                 fail(route, with: error)
             }
             if isConnected {
+                missedAcknowledgements += 1
                 await link.session.close()
                 closed(link.id)
+                reconnectAttempt = missedAcknowledgements
             }
         case .failure(let error):
             if isCurrent {

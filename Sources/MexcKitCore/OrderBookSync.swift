@@ -16,9 +16,9 @@ extension MexcFutures {
     /// after a reconnect, it catches up from the last 1,000 changes, or from a new snapshot when those
     /// don't reach back far enough. While MEXC's REST data lags behind the stream it tries again on a
     /// later change, at most every half second, which keeps one book well within MEXC's rate limits
-    /// for both requests. A catch-up that fails, such as one MEXC rate-limits after a reconnect, is
-    /// tried again on a later change too, waiting twice as long after each failure, up to about half a
-    /// minute.
+    /// for both requests. A catch-up that MEXC refuses or that can't reach MEXC, such as one MEXC
+    /// rate-limits after a reconnect, is tried again on a later change too, waiting twice as long after
+    /// each failure, up to about half a minute; any other error ends the sequence.
     ///
     /// Elements come only while no version is missing; a consumer that falls behind gets the latest
     /// book only. The sequence ends with the error the first snapshot or the stream throws, and ends
@@ -101,8 +101,9 @@ extension MexcFutures {
                     do {
                         try await catchUp(&book)
                         failedCatchUps = 0
-                    } catch {
-                        if Task.isCancelled { throw error }
+                    } catch is MexcError where !Task.isCancelled {
+                        failedCatchUps += 1
+                    } catch is ClientError where !Task.isCancelled {
                         failedCatchUps += 1
                     }
                     nextCatchUp = clock.now + catchUpInterval * (1 << Swift.min(failedCatchUps, 6))

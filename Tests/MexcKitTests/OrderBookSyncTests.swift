@@ -152,6 +152,18 @@ struct OrderBookSyncTests {
 
     // MARK: Ending
 
+    @Test func `a catch-up whose response doesn't decode ends the sequence with that error`() async throws {
+        await script.snapshots([Self.book(version: 10)])
+        await script.failNextRecentChanges(
+            with: DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Not a change"))
+        )
+        var books = sync().makeAsyncIterator()
+        _ = try await books.next()
+
+        pushes.yield(Self.change(12))
+        await #expect(throws: DecodingError.self) { try await books.next() }
+    }
+
     @Test func `a failing snapshot ends the sequence with its error`() async throws {
         var books = sync().makeAsyncIterator()
         await #expect(throws: MexcError.self) { try await books.next() }
@@ -271,12 +283,14 @@ struct OrderBookSyncTests {
         private var recentChangesQueue: [[MexcFutures.OrderBook.Change]] = []
         private(set) var snapshotReads = 0
         private(set) var recentChangesReads = 0
-        private var failsNextRecentChanges = false
+        private var nextRecentChangesError: (any Error)?
 
         func snapshots(_ books: [MexcFutures.OrderBook]) { snapshotQueue = books }
         func recentChanges(_ lists: [[MexcFutures.OrderBook.Change]]) { recentChangesQueue = lists }
-        /// Makes the next read of the recent changes fail, as when MEXC rate-limits it.
-        func failNextRecentChanges() { failsNextRecentChanges = true }
+        /// Makes the next read of the recent changes fail, by default as when MEXC rate-limits it.
+        func failNextRecentChanges(with error: any Error = MexcError(code: .tooFrequent)) {
+            nextRecentChangesError = error
+        }
 
         func nextSnapshot() throws -> MexcFutures.OrderBook {
             snapshotReads += 1
@@ -286,9 +300,9 @@ struct OrderBookSyncTests {
 
         func nextRecentChanges() throws -> [MexcFutures.OrderBook.Change] {
             recentChangesReads += 1
-            if failsNextRecentChanges {
-                failsNextRecentChanges = false
-                throw MexcError(code: .tooFrequent)
+            if let error = nextRecentChangesError {
+                nextRecentChangesError = nil
+                throw error
             }
             guard !recentChangesQueue.isEmpty else { throw MexcError(code: .busy, message: "No changes scripted") }
             return recentChangesQueue.removeFirst()

@@ -42,7 +42,7 @@ The code of the documentation's examples and the README's lives in `Tests/MexcKi
 
 `-Xswiftc -warnings-as-errors` applies to this package's targets only: SwiftPM compiles dependencies with their warnings suppressed.
 
-Linux is a supported platform but has no local check yet. `swift build` and `swift test` on Linux are unverified until CI or a Linux machine runs them, including the `MexcKitTestSupport` target, which imports Testing.
+Linux is a target platform with no local check yet. `swift build` and `swift test` on Linux are unverified until CI or a Linux machine runs them, including the `MexcKitTestSupport` target, which imports Testing.
 
 ## Tests
 
