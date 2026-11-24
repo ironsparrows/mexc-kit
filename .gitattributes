@@ -1,0 +1,5 @@
+# Recorded binary frames: never convert line endings.
+*.bin binary
+# MEXC's .proto files stay byte for byte as upstream ships them.
+/Sources/MexcKitProtobuf/Proto/** -text
+/Sources/MexcKitProtobuf/Generated/** linguist-generated

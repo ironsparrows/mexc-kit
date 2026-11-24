@@ -6,13 +6,15 @@ MexcKit is a Swift SDK for MEXC futures: the Market, Account and Trade REST endp
 
 ```text
 Your app
-└── MexcKit        product; the live client over REST and WebSocket; re-exports MexcKitCore
-    └── MexcKitCore  product; the contract: namespace, models, vocabularies, protocols, errors, credentials
+└── MexcKit            product; the live client over REST and WebSocket; re-exports MexcKitCore
+    ├── MexcKitProtobuf  not a product; MEXC's WebSocket messages, generated from its .proto files
+    └── MexcKitCore      product; the contract: namespace, models, vocabularies, protocols, errors, credentials
 ```
 
-- Dependencies point one way: app, `MexcKit`, `MexcKitCore`, platform.
+- Dependencies point one way: app, `MexcKit`, `MexcKitCore` or `MexcKitProtobuf`, platform.
 - `MexcKitCore` depends only on Foundation. It is a product so a module that needs only the contract (protocols and models, for mocking or dependency injection) doesn't compile NIO or BoringSSL.
 - `MexcKit` depends on AsyncHTTPClient (REST), SwiftNIO (the byte, header and time types AsyncHTTPClient's API takes), WebSocketKit (streams) and swift-crypto (HMAC request signing; it wraps CryptoKit on Apple platforms). None of their types appears in a public signature: `import MexcKit` is all an app writes. Only the transport conformers import AsyncHTTPClient, SwiftNIO and WebSocketKit.
+- `MexcKitProtobuf` holds the Swift that swift-protobuf generates from MEXC's `.proto` files, checked in so an app's build compiles plain Swift and runs no build plugin. It depends only on swift-protobuf's runtime, at least the version that generated the code. MEXC's messages have no Protobuf package, so they get bare names such as `Deal` and `Contract`; with `package` access they never reach an app or a public signature, which uses the `MexcFutures` models instead. Its `README.md` records the source commit and the regeneration command.
 - Every API type is nested in `MexcFutures`, so names like `Order` or `Position` can't collide with an app's types or another exchange SDK. Only `MexcError` and `MexcCredentials` sit at the top level, where a future spot module can share them.
 
 ## Settings
@@ -40,7 +42,8 @@ Import `Foundation` with a plain `import Foundation`, not `FoundationEssentials`
 
 - In `MexcKitCore` and `MexcKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
 - A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them.
-- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitTests` for the client. `MexcKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, `Support/` holds fakes and helpers, and `Fixtures/` holds responses recorded from MEXC, byte for byte except for replaced IDs. Private endpoints' fixtures are the examples in MEXC's documentation until a response is recorded with a key; their test suites say so.
+- `MexcKitProtobuf` is upstream code: `Proto/` holds MEXC's files unmodified and `Generated/` holds generated Swift, never edited by hand. The folder, file, mark, comment, access and vocabulary rules here don't apply to either.
+- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitProtobufTests` for decoding binary frames (recorded from MEXC, except one built to carry an unknown push type), `MexcKitTests` for the client. `MexcKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, `Support/` holds fakes and helpers, and `Fixtures/` holds responses recorded from MEXC, byte for byte except for replaced IDs. Private endpoints' fixtures are the examples in MEXC's documentation until a response is recorded with a key; their test suites say so.
 
 Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out:
 

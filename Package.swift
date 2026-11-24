@@ -24,6 +24,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", "3.0.0"..<"6.0.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.100.0"),
+        // At least the version that generated MexcKitProtobuf's code.
+        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.41.0"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.37.1"),
         .package(url: "https://github.com/vapor/websocket-kit.git", from: "2.16.2"),
     ],
@@ -36,12 +38,19 @@ let package = Package(
             name: "MexcKit",
             dependencies: [
                 "MexcKitCore",
+                "MexcKitProtobuf",
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "WebSocketKit", package: "websocket-kit"),
             ],
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "MexcKitProtobuf",
+            dependencies: [.product(name: "SwiftProtobuf", package: "swift-protobuf")],
+            exclude: ["Proto", "README.md"],
             swiftSettings: swiftSettings
         ),
         .target(
@@ -53,6 +62,15 @@ let package = Package(
         .testTarget(
             name: "MexcKitCoreTests",
             dependencies: ["MexcKitCore"],
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "MexcKitProtobufTests",
+            dependencies: [
+                "MexcKitProtobuf",
+                .product(name: "SwiftProtobuf", package: "swift-protobuf"),
+            ],
+            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         ),
         .testTarget(

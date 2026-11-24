@@ -67,6 +67,10 @@ extension LocalLiveTestSettings {
 
 A key and secret set in the environment win over the file's; the two are always taken together from one place. Without the file, the package builds and live tests skip. The values are compiled into the build folders (`.build`, DerivedData), so delete those before sharing them.
 
+## Protobuf messages
+
+`Sources/MexcKitProtobuf/Proto/` holds MEXC's `.proto` files unmodified, and `Generated/` beside it is generated from them. Never edit either by hand; update both with the steps in [its README](Sources/MexcKitProtobuf/README.md).
+
 ## Commits
 
 Conventional Commits with a short summary, one feature per commit.
