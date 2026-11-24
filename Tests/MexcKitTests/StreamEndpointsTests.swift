@@ -165,10 +165,12 @@ struct StreamEndpointsTests {
 extension StreamEndpoints {
     /// Streams over `server` with ``StreamConnection/Timing/test`` waits.
     static func test(
-        _ server: FakeWebSocketServer, timing: StreamConnection.Timing = .test
+        _ server: FakeWebSocketServer, account: StreamConnection.Account? = nil, timing: StreamConnection.Timing = .test
     ) -> StreamEndpoints {
-        StreamEndpoints(connection: StreamConnection(
-            url: URL(string: "wss://contract.mexc.com/edge?Trans-Protocol=Protobuf")!, transport: server, timing: timing
-        ))
+        let url = URL(string: "wss://contract.mexc.com/edge?Trans-Protocol=Protobuf")!
+        return StreamEndpoints(
+            connection: StreamConnection(url: url, transport: server, timing: timing),
+            accountConnection: StreamConnection(url: url, transport: server, account: account, timing: timing)
+        )
     }
 }

@@ -2,7 +2,8 @@ import Foundation
 import MexcKitProtobuf
 import SwiftProtobuf
 
-/// The WebSocket connection to MEXC's public channels, shared by every stream of one client.
+/// A WebSocket connection to MEXC's channels, shared by every stream of one client that uses it: one
+/// for the public channels, and one for the account's private channels.
 ///
 /// It connects when the first subscription starts and closes when the last one ends. Subscribe
 /// requests go up as JSON text frames, one at a time, each waiting for MEXC's acknowledgement before
@@ -11,9 +12,16 @@ import SwiftProtobuf
 /// their route. A JSON ping every 15 seconds keeps the connection open. After a drop it reconnects,
 /// waiting 1 second and doubling up to 60 seconds between attempts, and subscribes again to every
 /// route still consumed.
+///
+/// A private connection logs in first and then sends one `personal.filter` naming every private
+/// channel its streams consume and their markets, sent again whenever that changes; MEXC
+/// acknowledges the login but not the filter. It never sends an empty filter, which would turn every
+/// private channel back on: it closes instead.
 actor StreamConnection {
     private let url: URL
     private let transport: any WebSocketTransport
+    /// How a private connection logs in; `nil` for the public one.
+    private let account: Account?
     private let timing: Timing
 
     private var topics: [StreamSubscription.Route: Topic] = [:]
@@ -27,12 +35,17 @@ actor StreamConnection {
     /// The wait before a reconnect attempt, cancelled when the last stream ends.
     private var backoff: Task<Void, Never>?
     private var acknowledgement: PendingAcknowledgement?
+    /// Whether MEXC accepted the login on the current private connection.
+    private var isLoggedIn = false
+    /// The `personal.filter` request last sent on the current private connection.
+    private var sentFilter: String?
     /// Connects, sends requests and reconnects, one step at a time; `nil` when there is nothing to do.
     private var worker: Task<Void, Never>?
 
-    init(url: URL, transport: any WebSocketTransport, timing: Timing = .init()) {
+    init(url: URL, transport: any WebSocketTransport, account: Account? = nil, timing: Timing = .init()) {
         self.url = url
         self.transport = transport
+        self.account = account
         self.timing = timing
     }
 
@@ -53,8 +66,20 @@ actor StreamConnection {
         }
     }
 
+    /// How a private connection logs in.
+    struct Account: Sendable {
+        /// `nil` for a client without credentials: private streams then fail with
+        /// ``MexcFutures/ClientError/Reason/missingCredentials``.
+        var credentials: CredentialsProvider?
+        /// The time the login is signed with.
+        var clock: ServerClock
+    }
+
     /// Something that receives the pushes of one route.
     struct Consumer: Sendable {
+        /// The markets whose private pushes it wants, for the `personal.filter`; empty for every
+        /// market. Unused on public channels.
+        var markets: Set<MexcFutures.Symbol> = []
         /// Called with each push, in the order MEXC sent them.
         var receive: @Sendable (ContractWrapper) -> Void
         /// Called once if the subscription fails; no pushes follow.
@@ -93,6 +118,8 @@ actor StreamConnection {
     private struct PendingAcknowledgement {
         var id: UUID
         var channel: String
+        /// What an `rs.error` reply means for this request.
+        var rejection: MexcFutures.ClientError.Reason
         var continuation: CheckedContinuation<Void, any Error>?
         var outcome: Result<Void, any Error>?
     }
@@ -123,6 +150,19 @@ actor StreamConnection {
             guard let link else {
                 await connect()
                 continue
+            }
+            if account != nil {
+                if !isLoggedIn {
+                    await logIn(on: link)
+                    continue
+                }
+                // With no filter key to send, MEXC is told nothing: an empty filter would turn every
+                // private channel back on.
+                if let filter = personalFilter, filter.text != sentFilter {
+                    await send(filter, on: link)
+                    continue
+                }
+                break
             }
             if let subscription = unsubscribes.first {
                 unsubscribes.removeFirst()
@@ -173,6 +213,9 @@ actor StreamConnection {
             }
         }
         link = Link(id: id, session: session, receiving: receiving, pinging: pinging)
+        // A new connection logs in and filters from the start.
+        isLoggedIn = false
+        sentFilter = nil
     }
 
     // MARK: - Subscribing
@@ -184,6 +227,10 @@ actor StreamConnection {
     /// ``MexcFutures/ClientError/Reason/invalidRequest``, because MEXC's pushes couldn't be told
     /// apart.
     func subscribe(_ subscription: StreamSubscription, id: UUID, consumer: Consumer) {
+        if let account, account.credentials == nil {
+            consumer.fail(MexcFutures.ClientError(.missingCredentials))
+            return
+        }
         let route = subscription.route
         if let topic = topics[route] {
             guard topic.subscription == subscription else {
@@ -194,6 +241,8 @@ actor StreamConnection {
                 return
             }
             topics[route]?.consumers[id] = consumer
+            // The private filter may name more markets now.
+            if account != nil { wake() }
             return
         }
         topics[route] = Topic(subscription: subscription, consumers: [id: consumer])
@@ -206,11 +255,14 @@ actor StreamConnection {
         guard var topic = topics[route], topic.consumers.removeValue(forKey: id) != nil else { return }
         if !topic.consumers.isEmpty {
             topics[route] = topic
+            // The private filter may name fewer markets now.
+            if account != nil { wake() }
             return
         }
         topics[route] = nil
         // A request still waiting for its acknowledgement is undone when the acknowledgement arrives.
-        if topic.state == .subscribed {
+        // A private connection undoes it by sending the smaller filter instead.
+        if topic.state == .subscribed, account == nil {
             unsubscribes.append(topic.subscription)
         }
         if topics.isEmpty {
@@ -225,7 +277,10 @@ actor StreamConnection {
         topics[route]?.state = .requested
         var outcome: Result<Void, any Error>
         do {
-            try await send(subscription, over: link)
+            try await send(
+                subscription.subscribeRequest, acknowledgedOn: subscription.acknowledgementChannel,
+                naming: subscription.name, rejection: .subscriptionRejected, over: link
+            )
             outcome = .success(())
         } catch is ConnectionLost {
             return
@@ -264,20 +319,24 @@ actor StreamConnection {
         }
     }
 
-    /// Sends the subscribe request and waits for MEXC to acknowledge it, or throws when MEXC
-    /// reports an error, the time runs out or the connection drops.
-    private func send(_ subscription: StreamSubscription, over link: Link) async throws {
+    /// Sends `request` and waits for MEXC to acknowledge it on `channel`, or throws when MEXC
+    /// reports an error (`rejection`), the time runs out or the connection drops. `name` says what
+    /// the request is for, in a timeout's message.
+    private func send(
+        _ request: String, acknowledgedOn channel: String, naming name: String,
+        rejection: MexcFutures.ClientError.Reason, over link: Link
+    ) async throws {
         let id = UUID()
         // Expected before sending, so an acknowledgement that arrives at once isn't missed.
-        acknowledgement = PendingAcknowledgement(id: id, channel: subscription.acknowledgementChannel)
+        acknowledgement = PendingAcknowledgement(id: id, channel: channel, rejection: rejection)
         defer {
             if acknowledgement?.id == id { acknowledgement = nil }
         }
-        try await link.session.send(subscription.subscribeRequest)
+        try await link.session.send(request)
         let timeout = Task { [weak self, timing] in
             guard (try? await Task.sleep(for: timing.acknowledgementTimeout)) != nil else { return }
             await self?.resolveAcknowledgement(
-                id: id, with: .failure(MexcFutures.ClientError(.acknowledgementTimedOut, message: subscription.name))
+                id: id, with: .failure(MexcFutures.ClientError(.acknowledgementTimedOut, message: name))
             )
         }
         defer { timeout.cancel() }
@@ -312,6 +371,88 @@ actor StreamConnection {
         }
     }
 
+    // MARK: - Logging in
+
+    /// Logs in to a private connection: `{"subscribe":false,"method":"login","param":{…}}`, signed
+    /// like a REST request without parameters, over the API key and the request time.
+    ///
+    /// MEXC's official clients put `subscribe` at the top level, where the documentation's example
+    /// has it inside `param` (`mexc-api-demo`, `go/clients/futures/ws_stream.go`, `Login`). A failed
+    /// login fails every private stream, as does an error the credentials provider throws.
+    private func logIn(on link: Link) async {
+        let request: String
+        do {
+            guard let credentials = account?.credentials, let clock = account?.clock else {
+                throw MexcFutures.ClientError(.missingCredentials)
+            }
+            let signer = RequestSigner(credentials: try await credentials())
+            let requestTime = String(await clock.now().millisecondsSince1970)
+            request = LoginRequest(
+                apiKey: signer.credentials.apiKey, requestTime: requestTime,
+                signature: signer.signature(requestTime: requestTime, parameters: "")
+            ).text
+        } catch {
+            failAll(with: error)
+            return
+        }
+        do {
+            try await send(request, acknowledgedOn: "rs.login", naming: "the login", rejection: .loginRejected, over: link)
+            if self.link?.id == link.id {
+                isLoggedIn = true
+            }
+        } catch is ConnectionLost {
+            return
+        } catch let error as MexcFutures.ClientError where error.reason == .connectionClosed {
+            await link.session.close()
+            closed(link.id)
+        } catch {
+            // A login on a connection that has since dropped is retried on the next one.
+            if self.link?.id == link.id {
+                failAll(with: error)
+            }
+        }
+    }
+
+    /// Sends a `personal.filter`, which MEXC doesn't acknowledge, and counts the routes it names as
+    /// subscribed.
+    private func send(_ filter: (text: String, routes: [StreamSubscription.Route]), on link: Link) async {
+        do {
+            try await link.session.send(filter.text)
+        } catch {
+            await link.session.close()
+            closed(link.id)
+            return
+        }
+        guard self.link?.id == link.id else { return }
+        sentFilter = filter.text
+        for route in filter.routes where topics[route] != nil {
+            topics[route]?.state = .subscribed
+            topics[route]?.wasSubscribed = true
+        }
+    }
+
+    /// The `personal.filter` request for the private routes consumed now, such as
+    /// `{"method":"personal.filter","param":{"filters":[{"filter":"order","rules":["BTC_USDT"]}]}}`,
+    /// and those routes; `nil` when no route has a filter key. A filter names no markets when a
+    /// consumer wants every market.
+    private var personalFilter: (text: String, routes: [StreamSubscription.Route])? {
+        let entries = topics.compactMap { route, topic -> (PersonalFilter.Entry, StreamSubscription.Route)? in
+            guard let key = topic.subscription.filter else { return nil }
+            let markets = topic.consumers.values.map(\.markets)
+            let rules = markets.contains(where: \.isEmpty) ? nil : Set(markets.joined()).map(\.rawValue).sorted()
+            return (PersonalFilter.Entry(filter: key, rules: rules), route)
+        }
+        guard !entries.isEmpty else { return nil }
+        let filters = entries.map(\.0).sorted { $0.filter < $1.filter }
+        return (PersonalFilter(filters: filters).text, entries.map(\.1))
+    }
+
+    private func failAll(with error: any Error) {
+        for route in topics.keys {
+            fail(route, with: error)
+        }
+    }
+
     // MARK: - Receiving
 
     private func receive(_ frame: WebSocketFrame, on linkID: Int) {
@@ -320,10 +461,8 @@ actor StreamConnection {
         switch frame {
         case .text(let text):
             guard let control = try? JSONDecoder().decode(ControlFrame.self, from: Data(text.utf8)) else { return }
-            if control.channel == "rs.error" {
-                resolveAcknowledgement(with: .failure(MexcFutures.ClientError(
-                    .subscriptionRejected, message: control.message
-                )))
+            if control.channel == "rs.error", let rejection = acknowledgement?.rejection {
+                resolveAcknowledgement(with: .failure(MexcFutures.ClientError(rejection, message: control.message)))
             } else if control.channel == acknowledgement?.channel {
                 resolveAcknowledgement(with: .success(()))
             }
@@ -344,6 +483,8 @@ actor StreamConnection {
         guard let link, link.id == id else { return }
         self.link = nil
         stop(link)
+        isLoggedIn = false
+        sentFilter = nil
         reconnectAttempt = 0
         resolveAcknowledgement(with: .failure(ConnectionLost()))
         unsubscribes.removeAll()
@@ -359,6 +500,45 @@ actor StreamConnection {
     }
 
     // MARK: - Wire
+
+    private struct LoginRequest: Encodable {
+        var method = "login"
+        var subscribe = false
+        var param: Parameters
+
+        struct Parameters: Encodable {
+            var apiKey: String
+            var reqTime: String
+            var signature: String
+        }
+
+        init(apiKey: String, requestTime: String, signature: String) {
+            param = Parameters(apiKey: apiKey, reqTime: requestTime, signature: signature)
+        }
+
+        var text: String { String(decoding: try! JSONEncoder.requestBody.encode(self), as: UTF8.self) }
+    }
+
+    private struct PersonalFilter: Encodable {
+        var method = "personal.filter"
+        var param: Parameters
+
+        struct Parameters: Encodable {
+            var filters: [Entry]
+        }
+
+        struct Entry: Encodable {
+            var filter: String
+            /// `nil` for every market; MEXC's clients leave `rules` out then.
+            var rules: [String]?
+        }
+
+        init(filters: [Entry]) {
+            param = Parameters(filters: filters)
+        }
+
+        var text: String { String(decoding: try! JSONEncoder.requestBody.encode(self), as: UTF8.self) }
+    }
 
     /// A text frame: an acknowledgement such as `{"channel":"rs.sub.deal","data":"success"}`, an
     /// error such as `{"channel":"rs.error","data":"Contract [NOPE_USDT] not exists"}`, or a pong.
@@ -383,6 +563,10 @@ extension ContractWrapper {
     /// The route of this push: its channel without `push.`, its market, and for candles the interval.
     fileprivate var route: StreamSubscription.Route {
         let channel = channel.hasPrefix("push.") ? String(channel.dropFirst("push.".count)) : channel
+        // Private pushes are routed by channel alone; each stream keeps its own markets.
+        if channel.hasPrefix("personal.") {
+            return StreamSubscription.Route(channel: channel, symbol: "", variant: nil)
+        }
         var variant: String?
         if case .wsKline(let candle) = data {
             variant = MexcFutures.Candle.Interval(candle.interval)?.rawValue

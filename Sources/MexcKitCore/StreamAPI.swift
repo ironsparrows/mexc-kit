@@ -3,10 +3,13 @@ public import Foundation
 // MARK: - Protocol
 
 extension MexcFutures {
-    /// Live market data, pushed by MEXC over a WebSocket as it changes.
+    /// Live market and account data, pushed by MEXC over a WebSocket as it changes.
     ///
-    /// None of these streams needs credentials. Every stream of one client shares one connection,
-    /// and streams of the same values share one subscription. A stream subscribes as soon as it's
+    /// The market streams need no credentials and share one connection. The account streams, from
+    /// ``orders(_:)`` on, need the client's credentials and share a second connection, which logs in
+    /// when the first of them starts and closes when the last one ends; without credentials they
+    /// throw ``ClientError/Reason/missingCredentials``. Streams of the same values share one
+    /// subscription. A stream subscribes as soon as it's
     /// made, and unsubscribes when it ends: when the task iterating it is cancelled, or when the
     /// stream is released, such as after a `break` out of a loop over it. The connection closes when
     /// the last stream ends.
@@ -14,7 +17,11 @@ extension MexcFutures {
     /// A stream throws ``ClientError`` when:
     /// - MEXC rejects the subscription, such as for an unknown symbol:
     ///   ``ClientError/Reason/subscriptionRejected``;
-    /// - MEXC doesn't acknowledge it within 10 seconds: ``ClientError/Reason/acknowledgementTimedOut``;
+    /// - MEXC rejects the login of the account streams: ``ClientError/Reason/loginRejected``. This
+    ///   also ends account streams already running when it happens on a reconnect, as does an error
+    ///   the credentials provider throws, which ends them unchanged;
+    /// - MEXC doesn't acknowledge the subscription or the login within 10 seconds:
+    ///   ``ClientError/Reason/acknowledgementTimedOut``;
     /// - connecting fails before MEXC ever acknowledged the subscription:
     ///   ``ClientError/Reason/connectionFailed``, including when it doesn't open within 10 seconds;
     /// - a stream of the same market is open with values MEXC's pushes can't tell apart, such as
@@ -90,5 +97,48 @@ extension MexcFutures {
         ///
         /// A consumer that falls behind gets the latest price only.
         func fairPrice(_ symbol: Symbol) -> AsyncThrowingStream<PriceSnapshot, any Error>
+
+        /// The account's orders on the given markets, or on every market for an empty set, each
+        /// time one changes.
+        ///
+        /// MEXC's push leaves out the attached stops, the total fee and trigger protection, so they
+        /// are `nil`; read the order through ``OrderAPI`` for them. Every change reaches a consumer
+        /// that falls behind.
+        func orders(_ symbols: Set<Symbol>) -> AsyncThrowingStream<Order, any Error>
+
+        /// The account's fills on the given markets, or on every market for an empty set, as they
+        /// happen. Every fill reaches a consumer that falls behind.
+        func fills(_ symbols: Set<Symbol>) -> AsyncThrowingStream<Fill, any Error>
+
+        /// The account's positions on the given markets, or on every market for an empty set, each
+        /// time one changes.
+        ///
+        /// MEXC's push leaves out the profit ratio and the total fee, so they are `nil`, and
+        /// ``Position/addsMarginAutomatically`` is `false` when the push leaves the flag out. Every
+        /// change reaches a consumer that falls behind.
+        func positions(_ symbols: Set<Symbol>) -> AsyncThrowingStream<Position, any Error>
+
+        /// The futures account's balances, each time one changes. Every change reaches a consumer
+        /// that falls behind.
+        func balances() -> AsyncThrowingStream<BalanceUpdate, any Error>
+    }
+}
+
+// MARK: - Defaults
+
+extension MexcFutures.StreamAPI {
+    /// The account's orders on every market, each time one changes.
+    public func orders() -> AsyncThrowingStream<MexcFutures.Order, any Error> {
+        orders([])
+    }
+
+    /// The account's fills on every market, as they happen.
+    public func fills() -> AsyncThrowingStream<MexcFutures.Fill, any Error> {
+        fills([])
+    }
+
+    /// The account's positions on every market, each time one changes.
+    public func positions() -> AsyncThrowingStream<MexcFutures.Position, any Error> {
+        positions([])
     }
 }

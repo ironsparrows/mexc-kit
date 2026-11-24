@@ -3,7 +3,7 @@ public import Foundation
 extension MexcFutures {
     /// The client for MEXC's futures API.
     ///
-    /// A client is a reference: every holder shares its clock offset and stream connection. Public endpoints never read
+    /// A client is a reference: every holder shares its clock offset and stream connections. Public endpoints never read
     /// credentials. A private endpoint on a client without credentials throws
     /// ``ClientError/Reason/missingCredentials`` before anything is sent.
     public final class Client: API {
@@ -62,12 +62,17 @@ extension MexcFutures {
             trailingOrder = TrailingOrderEndpoints(rest: rest)
             selfTradePrevention = SelfTradePreventionEndpoints(rest: rest)
             stream = StreamEndpoints(
-                connection: StreamConnection(url: configuration.streamURL, transport: webSocketTransport)
+                connection: StreamConnection(url: configuration.streamURL, transport: webSocketTransport),
+                accountConnection: StreamConnection(
+                    url: configuration.streamURL, transport: webSocketTransport,
+                    account: StreamConnection.Account(credentials: credentials, clock: clock)
+                )
             )
         }
 
         /// Measures the offset between this device's clock and MEXC's, and applies it to the
-        /// `Request-Time` of every later private request.
+        /// `Request-Time` of every later private request and to the time the account streams' login
+        /// is signed with.
         ///
         /// MEXC rejects a private request whose time is more than 10 seconds off its own clock, or
         /// off by more than ``Configuration/receiveWindow`` when that is set. Call this once when the

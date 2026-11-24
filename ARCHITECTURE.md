@@ -53,7 +53,7 @@ Files of one kind use the same `// MARK: -` sections in the same order; a sectio
 | A model | Model · Reading · Wire |
 | A request value | Model · one section per nested type |
 | A domain conformer | Endpoints · Wire |
-| The stream connection | Connection · Subscribing · Receiving · Recovering · Wire |
+| The stream connection | Connection · Subscribing · Logging in · Receiving · Recovering · Wire |
 
 ## Vocabulary
 
