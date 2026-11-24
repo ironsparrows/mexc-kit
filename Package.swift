@@ -44,6 +44,12 @@ let package = Package(
             ],
             swiftSettings: swiftSettings
         ),
+        .target(
+            name: "MexcKitTestSupport",
+            dependencies: ["MexcKitCore"],
+            path: "Tests/MexcKitTestSupport",
+            swiftSettings: swiftSettings
+        ),
         .testTarget(
             name: "MexcKitCoreTests",
             dependencies: ["MexcKitCore"],
@@ -53,6 +59,7 @@ let package = Package(
             name: "MexcKitTests",
             dependencies: [
                 "MexcKit",
+                "MexcKitTestSupport",
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),

@@ -7,3 +7,6 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 /Package.resolved
+
+# Live test API key and secret for Xcode runs. Only you create this file; see CONTRIBUTING.md.
+/Tests/MexcKitTestSupport/LocalLiveTestSettings.swift

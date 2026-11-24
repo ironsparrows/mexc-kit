@@ -1,14 +1,18 @@
 import Foundation
+import MexcKitTestSupport
 import Testing
 @testable import MexcKit
 
-@Suite("Live REST", .tags(.live), .liveServersEnabled)
+@Suite(
+    "Live REST", .tags(.live), .enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run"),
+    .timeLimit(.minutes(2))
+)
 struct LiveRESTTests {
     private static let btc: MexcFutures.Symbol = "BTC_USDT"
-    private let market = MexcFutures.Client().market
+    private let market = MexcFutures.Client(credentials: LiveTestSettings.credentials).market
 
     @Test func `the clock synchronizes with MEXC`() async throws {
-        let client = MexcFutures.Client()
+        let client = MexcFutures.Client(credentials: LiveTestSettings.credentials)
         try await client.synchronizeClock()
         // A wrong unit (seconds for milliseconds) would put MEXC's clock decades away.
         #expect(abs(await client.clock.now().timeIntervalSinceNow) < 60)
