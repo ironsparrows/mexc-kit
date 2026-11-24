@@ -89,6 +89,8 @@ struct StreamEndpointsTests {
         #expect(change.asks == [.init(price: Decimal(string: "60391.6")!, volume: 446_741, orderCount: 1)])
         #expect(change.bids.isEmpty)
         #expect(change.version == 43_829_097_504)
+        // The matching engine's time (`cts`), not the push's (`ts`, 2 ms later).
+        #expect(change.time == Date(timeIntervalSince1970: 1_795_506_146.872))
     }
 
     @Test func `an order book of a few levels decodes`() async throws {

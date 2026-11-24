@@ -45,7 +45,7 @@ struct StreamEndpoints: MexcFutures.StreamAPI {
     ) -> AsyncThrowingStream<MexcFutures.OrderBook.Change, any Error> {
         stream(StreamSubscription(name: "\(symbol) order book changes", channel: "depth", symbol: symbol), buffering: .unbounded) { push in
             guard case .depthInfo(let depth) = push.data else { return [] }
-            return [try MexcFutures.OrderBook.Change(depth)]
+            return [try MexcFutures.OrderBook.Change(depth, time: depth.cts != 0 ? depth.cts : push.ts)]
         }
     }
 
@@ -220,11 +220,12 @@ extension MexcFutures.OrderBook {
 }
 
 extension MexcFutures.OrderBook.Change {
-    fileprivate init(_ depth: DepthInfo) throws {
+    fileprivate init(_ depth: DepthInfo, time: Int64) throws {
         self.init(
             asks: try depth.asks.map(MexcFutures.OrderBook.Level.init),
             bids: try depth.bids.map(MexcFutures.OrderBook.Level.init),
-            version: depth.version
+            version: depth.version,
+            time: Date(milliseconds: time)
         )
     }
 }

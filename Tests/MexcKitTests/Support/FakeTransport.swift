@@ -17,12 +17,19 @@ actor FakeTransport: HTTPTransport {
 
     /// A transport that answers with a recorded response from `Fixtures`, such as `"Market/ticker"`.
     init(fixture name: String) throws {
-        let path = "Fixtures/" + name
-        let url = try #require(Bundle.module.url(
-            forResource: (path as NSString).lastPathComponent, withExtension: "json",
-            subdirectory: (path as NSString).deletingLastPathComponent
-        ))
-        self.init(responses: [TransportResponse(status: 200, body: try Data(contentsOf: url))])
+        try self.init(fixtures: [name])
+    }
+
+    /// A transport that answers each request with the next of these recorded responses.
+    init(fixtures names: [String]) throws {
+        self.init(responses: try names.map { name in
+            let path = "Fixtures/" + name
+            let url = try #require(Bundle.module.url(
+                forResource: (path as NSString).lastPathComponent, withExtension: "json",
+                subdirectory: (path as NSString).deletingLastPathComponent
+            ))
+            return TransportResponse(status: 200, body: try Data(contentsOf: url))
+        })
     }
 
     func send(_ request: TransportRequest) async throws -> TransportResponse {

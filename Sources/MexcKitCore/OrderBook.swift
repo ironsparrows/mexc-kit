@@ -44,11 +44,15 @@ extension MexcFutures.OrderBook {
         public let bids: [Level]
         /// The version the book has after this change.
         public let version: Int64
+        /// When MEXC's matching engine made the change, or, from a stream push that doesn't say,
+        /// when MEXC pushed it; `nil` when a response doesn't say.
+        public let time: Date?
 
-        public init(asks: [Level], bids: [Level], version: Int64) {
+        public init(asks: [Level], bids: [Level], version: Int64, time: Date? = nil) {
             self.asks = asks
             self.bids = bids
             self.version = version
+            self.time = time
         }
     }
 }
@@ -71,7 +75,7 @@ extension MexcFutures.OrderBook: Decodable {
 
 extension MexcFutures.OrderBook.Change: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case asks, bids, version
+        case asks, bids, version, cts
     }
 
     public init(from decoder: any Decoder) throws {
@@ -79,6 +83,7 @@ extension MexcFutures.OrderBook.Change: Decodable {
         asks = try container.decode([MexcFutures.OrderBook.Level].self, forKey: .asks)
         bids = try container.decode([MexcFutures.OrderBook.Level].self, forKey: .bids)
         version = try container.decode(Int64.self, forKey: .version)
+        time = try container.millisecondDateIfPresent(forKey: .cts)
     }
 }
 

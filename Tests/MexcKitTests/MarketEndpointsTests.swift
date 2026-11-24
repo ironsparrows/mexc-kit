@@ -83,6 +83,8 @@ struct MarketEndpointsTests {
         #expect(changes.map(\.version) == [43_833_673_147, 43_833_673_148, 43_833_673_149])
         #expect(changes.last?.bids == [.init(price: Decimal(string: "60007.7")!, volume: 206_189, orderCount: 2)])
         #expect(changes.last?.asks == [])
+        // MEXC sends `"cts": null`.
+        #expect(changes.allSatisfy { $0.time == nil })
     }
 
     @Test func `index and fair price`() async throws {
