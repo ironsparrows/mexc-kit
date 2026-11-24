@@ -37,7 +37,8 @@ extension MexcFutures {
         public let funding: Decimal
         /// The realized profit; negative for a loss.
         public let realizedProfit: Decimal
-        /// MEXC's "auto-add initial margin supported" flag.
+        /// MEXC's "auto-add initial margin supported" flag, which ``PositionAPI/setAddsMarginAutomatically(_:of:)``
+        /// sets.
         public let addsMarginAutomatically: Bool
         /// The unrealized profit; negative for a loss.
         public let unrealizedProfit: Decimal?

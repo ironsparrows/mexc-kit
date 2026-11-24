@@ -14,6 +14,7 @@ extension MexcFutures {
         public let planOrder: any PlanOrderAPI
         public let stopOrder: any StopOrderAPI
         public let trailingOrder: any TrailingOrderAPI
+        public let selfTradePrevention: any SelfTradePreventionAPI
         let rest: RESTClient
         let clock: ServerClock
 
@@ -57,6 +58,7 @@ extension MexcFutures {
             planOrder = PlanOrderEndpoints(rest: rest)
             stopOrder = StopOrderEndpoints(rest: rest)
             trailingOrder = TrailingOrderEndpoints(rest: rest)
+            selfTradePrevention = SelfTradePreventionEndpoints(rest: rest)
         }
 
         /// Measures the offset between this device's clock and MEXC's, and applies it to the

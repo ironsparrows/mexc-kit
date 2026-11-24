@@ -161,6 +161,65 @@ struct PositionEndpointsTests {
         #expect(sent.headers.contains { $0.name == "Signature" })
     }
 
+    @Test func `a sub-account's leverage`() async throws {
+        let (settings, url) = try await call(fixture: "Position/leverage_subaccount") {
+            try await $0.leverage("BTC_USDT", subaccount: "mexc_sub_01")
+        }
+        #expect(url == """
+            https://api.mexc.com/api/v1/private/position/leverage/subaccount?subAccount=mexc_sub_01&symbol=BTC_USDT
+            """)
+        #expect(settings.map(\.side) == [.long, .short])
+    }
+
+    @Test func `setting a position's leverage`() async throws {
+        let sent = try await post { try await $0.setLeverage(20, of: .init(rawValue: "1109973831")) }
+        #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/change_leverage")
+        #expect(sent.bodyText == #"{"leverage":20,"positionId":1109973831}"#)
+    }
+
+    @Test func `setting the leverage of a side without a position`() async throws {
+        let sent = try await post { try await $0.setLeverage(15, in: "BTC_USDT", side: .short, marginMode: .cross) }
+        #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/change_leverage")
+        #expect(sent.bodyText == #"{"leverage":15,"openType":2,"positionType":2,"symbol":"BTC_USDT"}"#)
+    }
+
+    @Test(arguments: [(Decimal(string: "2.5")!, #"{"amount":2.5,"positionId":7,"type":"ADD"}"#),
+                      (Decimal(string: "-1.25")!, #"{"amount":1.25,"positionId":7,"type":"SUB"}"#)])
+    func `adjusting margin sends the size and the direction`(change: Decimal, body: String) async throws {
+        let sent = try await post { try await $0.adjustMargin(of: .init(rawValue: "7"), by: change) }
+        #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/change_margin")
+        #expect(sent.bodyText == body)
+    }
+
+    @Test func `adjusting margin by zero throws before sending`() async throws {
+        let transport = FakeTransport()
+        let error = try await #require(throws: MexcFutures.ClientError.self) {
+            try await PositionEndpoints(rest: .test(transport: transport)).adjustMargin(of: .init(rawValue: "7"), by: 0)
+        }
+        #expect(error.reason == .invalidRequest)
+        #expect(await transport.requests.isEmpty)
+    }
+
+    @Test(arguments: [true, false])
+    func `turning automatic margin adding on or off`(enabled: Bool) async throws {
+        let sent = try await post { try await $0.setAddsMarginAutomatically(enabled, of: .init(rawValue: "7")) }
+        #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/change_auto_add_im")
+        #expect(sent.bodyText == #"{"isEnabled":\#(enabled),"positionId":7}"#)
+    }
+
+    /// Runs `body` against MEXC's documented success without `data`, and returns the one signed POST it
+    /// sent.
+    private func post(_ body: (PositionEndpoints) async throws -> Void) async throws -> TransportRequest {
+        let transport = FakeTransport(json: #"{"success":true,"code":0}"#)
+        try await body(PositionEndpoints(rest: .test(transport: transport)))
+        let requests = await transport.requests
+        #expect(requests.count == 1)
+        let sent = try #require(requests.first)
+        #expect(sent.method == .post)
+        #expect(sent.headers.contains { $0.name == "Signature" })
+        return sent
+    }
+
     private func call<Value>(
         fixture: String, _ body: (PositionEndpoints) async throws -> Value
     ) async throws -> (Value, String) {

@@ -1,0 +1,1 @@
+{    "success": true,    "code": 0,    "data": [        {            "groupName": "stpconfi001",            "blackList": [                "45359845",                "72009483"            ],            "createTime": 1768804555000,            "updateTime": 1768804555000        }    ]}

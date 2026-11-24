@@ -3,11 +3,13 @@ public import Foundation
 // MARK: - Protocol
 
 extension MexcFutures {
-    /// The futures account: balances, transfers, profit rate, risk limits, position mode and fees.
+    /// The futures account: balances, transfers, profit rate, risk limits, position and multi-asset
+    /// modes, and fees.
     ///
     /// Every request needs credentials. Balances, transfers, the profit rate, fee totals, discount usage
     /// and the fee configurations need MEXC's "View Account Details" permission; risk limits, the
-    /// position mode, fee rates and fee deductions need "View Order Details".
+    /// position mode, fee rates and fee deductions need "View Order Details"; changing a mode needs
+    /// "Order Placing".
     public protocol AccountAPI: Sendable {
         /// The balance of every asset in the futures account.
         func balances() async throws -> [Balance]
@@ -30,6 +32,17 @@ extension MexcFutures {
 
         /// Whether the account holds long and short positions in one market at once.
         func positionMode() async throws -> PositionMode
+
+        /// A sub-account's position mode, by its name. Needs the master account's key.
+        func positionMode(subaccount: String) async throws -> PositionMode
+
+        /// Sets the account's position mode. MEXC refuses while the account has pending orders, waiting
+        /// plan orders or open positions; going from hedge to one-way mode resets the risk limit level
+        /// to 1. Needs MEXC's "Order Placing" permission.
+        func setPositionMode(_ mode: PositionMode) async throws
+
+        /// Turns MEXC's multi-asset mode on or off. Needs MEXC's "Order Placing" permission.
+        func setMultiAssetMode(_ enabled: Bool) async throws
 
         /// The account's fee rates in one market, or its general rates when `symbol` is `nil`.
         func feeRates(_ symbol: Symbol?) async throws -> FeeRates

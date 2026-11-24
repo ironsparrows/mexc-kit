@@ -23,6 +23,20 @@ struct EnvelopeTests {
         _ = try await Envelope.data(NoData.self, from: response(json))
     }
 
+    @Test(arguments: [
+        #"{"success":true,"code":0}"#,
+        #"{"success":true,"code":0,"data":null}"#,
+    ])
+    func `an optional response reads missing or null data as nil`(json: String) async throws {
+        #expect(try await Envelope.data(Int?.self, from: response(json)) == nil)
+    }
+
+    @Test func `a required response still needs its data`() async throws {
+        await #expect(throws: DecodingError.self) {
+            try await Envelope.data(Int.self, from: response(#"{"success":true,"code":0}"#))
+        }
+    }
+
     @Test func `an endpoint without data still throws a failure`() async throws {
         let error = try await mexcError(
             from: response(#"{"success":false,"code":2041,"message":"order state cannot be cancelled"}"#),

@@ -46,6 +46,7 @@ struct PublicSurfaceTests {
             MexcFutures.StopOrder.Exit.self, MexcFutures.StopOrder.Leg.self, MexcFutures.TrailingOrderRequest.self,
             MexcFutures.TrailingOrder.self, MexcFutures.TrailingOrder.Callback.self,
             MexcFutures.TrailingOrder.Callback.Kind.self,
+            (any MexcFutures.SelfTradePreventionAPI).self, MexcFutures.SelfTradePreventionGroup.self,
         ]
         _ = types
     }

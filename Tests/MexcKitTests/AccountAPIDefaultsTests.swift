@@ -50,6 +50,9 @@ private struct RecordingAccount: MexcFutures.AccountAPI {
         throw CancellationError()
     }
     func positionMode() async throws -> MexcFutures.PositionMode { .hedge }
+    func positionMode(subaccount: String) async throws -> MexcFutures.PositionMode { .hedge }
+    func setPositionMode(_ mode: MexcFutures.PositionMode) async throws {}
+    func setMultiAssetMode(_ enabled: Bool) async throws {}
 
     func feeRates(_ symbol: MexcFutures.Symbol?) async throws -> MexcFutures.FeeRates {
         await calls.record("feeRates \(symbol?.rawValue ?? "nil")")

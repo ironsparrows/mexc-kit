@@ -56,6 +56,12 @@ enum Envelope {
             data = Result {
                 // An endpoint without data reads none, whatever MEXC sends.
                 if let nothing = NoData() as? Value { return nothing }
+                // An optional response reads a missing `data` as `nil`, as it reads `null`.
+                if !container.contains(.data), let optional = Value.self as? any ExpressibleByNilLiteral.Type,
+                    let none = optional.init(nilLiteral: ()) as? Value
+                {
+                    return none
+                }
                 return try container.decode(Value.self, forKey: .data)
             }
         }

@@ -255,6 +255,46 @@ struct AccountEndpointsTests {
         }
     }
 
+    @Test func `a sub-account's position mode, as the documented fields describe`() async throws {
+        let transport = FakeTransport(json: #"{"success":true,"code":0,"data":{"subAccount":"sub_01","positionMode":2}}"#)
+        let mode = try await AccountEndpoints(rest: .test(transport: transport)).positionMode(subaccount: "sub_01")
+        #expect(mode == .oneWay)
+        let sent = try #require(await transport.requests.first)
+        #expect(sent.url.absoluteString == """
+            https://api.mexc.com/api/v1/private/position/position_mode/subaccount?subAccount=sub_01
+            """)
+        #expect(sent.headers.contains { $0.name == "Signature" })
+    }
+
+    @Test func `the documented sub-account position mode example, a leverage list, throws DecodingError`() async throws {
+        let transport = try FakeTransport(fixture: "Position/leverage_subaccount")
+        await #expect(throws: DecodingError.self) {
+            try await AccountEndpoints(rest: .test(transport: transport)).positionMode(subaccount: "mexc_sub_01")
+        }
+    }
+
+    @Test func `setting the position mode`() async throws {
+        let transport = FakeTransport(json: #"{"success":true,"code":0}"#)
+        try await AccountEndpoints(rest: .test(transport: transport)).setPositionMode(.oneWay)
+        let sent = try #require(await transport.requests.first)
+        #expect(sent.method == .post)
+        #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/change_position_mode")
+        #expect(sent.bodyText == #"{"positionMode":2}"#)
+    }
+
+    @Test(arguments: [true, false])
+    func `setting multi-asset mode is an empty form POST`(enabled: Bool) async throws {
+        let transport = try FakeTransport(fixture: "Account/change_multi_asset_mode")
+        try await AccountEndpoints(rest: .test(transport: transport)).setMultiAssetMode(enabled)
+        let sent = try #require(await transport.requests.first)
+        #expect(sent.method == .post)
+        #expect(sent.url.absoluteString == """
+            https://api.mexc.com/api/v1/private/multiAssets/changeMultiAssetMode/\(enabled)
+            """)
+        // The form content type and signing of an empty form are pinned in `RequestTests`.
+        #expect(sent.bodyText.isEmpty)
+    }
+
     private func call<Value>(
         _ fixture: String, _ body: (AccountEndpoints) async throws -> Value
     ) async throws -> (Value, String) {

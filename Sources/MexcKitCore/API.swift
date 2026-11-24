@@ -18,5 +18,7 @@ extension MexcFutures {
         var stopOrder: any StopOrderAPI { get }
         /// Trailing orders.
         var trailingOrder: any TrailingOrderAPI { get }
+        /// Self-trade prevention groups, for market maker accounts.
+        var selfTradePrevention: any SelfTradePreventionAPI { get }
     }
 }

@@ -60,6 +60,14 @@ private struct RecordingPositions: MexcFutures.PositionAPI {
     func reverse(_ position: MexcFutures.PositionID, in symbol: MexcFutures.Symbol, volume: Decimal) async throws {}
 
     func closeAll() async throws {}
+    func leverage(_ symbol: MexcFutures.Symbol, subaccount: String) async throws -> [MexcFutures.LeverageSetting] { [] }
+    func setLeverage(_ leverage: Int, of position: MexcFutures.PositionID) async throws {}
+    func setLeverage(
+        _ leverage: Int, in symbol: MexcFutures.Symbol, side: MexcFutures.PositionSide,
+        marginMode: MexcFutures.MarginMode
+    ) async throws {}
+    func adjustMargin(of position: MexcFutures.PositionID, by change: Decimal) async throws {}
+    func setAddsMarginAutomatically(_ enabled: Bool, of position: MexcFutures.PositionID) async throws {}
 
     private func describe(
         _ symbol: MexcFutures.Symbol?, _ side: MexcFutures.PositionSide?, _ start: Date?, _ end: Date?

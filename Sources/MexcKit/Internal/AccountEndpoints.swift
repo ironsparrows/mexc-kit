@@ -46,6 +46,26 @@ struct AccountEndpoints: MexcFutures.AccountAPI {
         try await rest.send(.get("/api/v1/private/position/position_mode", authentication: .signed))
     }
 
+    func positionMode(subaccount: String) async throws -> MexcFutures.PositionMode {
+        let mode: SubaccountPositionMode = try await rest.send(.get(
+            "/api/v1/private/position/position_mode/subaccount", query: ["subAccount": subaccount],
+            authentication: .signed
+        ))
+        return mode.positionMode
+    }
+
+    func setPositionMode(_ mode: MexcFutures.PositionMode) async throws {
+        let body = ["positionMode": mode]
+        let _: NoData = try await rest.send(.post("/api/v1/private/position/change_position_mode", .json(body)))
+    }
+
+    func setMultiAssetMode(_ enabled: Bool) async throws {
+        // MEXC documents this one with a form content type and only the path parameter.
+        let _: NoData = try await rest.send(
+            .post("/api/v1/private/multiAssets/changeMultiAssetMode/\(enabled)", .emptyForm)
+        )
+    }
+
     func feeRates(_ symbol: MexcFutures.Symbol?) async throws -> MexcFutures.FeeRates {
         try await rest.send(.get(
             "/api/v1/private/account/tiered_fee_rate/v2", query: ["symbol": symbol?.rawValue], authentication: .signed
@@ -85,4 +105,12 @@ struct AccountEndpoints: MexcFutures.AccountAPI {
         )
         return deductions.items
     }
+}
+
+// MARK: - Wire
+
+/// A sub-account's position mode, as MEXC's field table describes it. Its example is another endpoint's
+/// list, which doesn't decode.
+private struct SubaccountPositionMode: Decodable, Sendable {
+    let positionMode: MexcFutures.PositionMode
 }

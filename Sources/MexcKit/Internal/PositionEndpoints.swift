@@ -64,6 +64,41 @@ struct PositionEndpoints: MexcFutures.PositionAPI {
         let _: NoData = try await rest.send(.post("/api/v1/private/position/close_all"))
     }
 
+    func leverage(_ symbol: MexcFutures.Symbol, subaccount: String) async throws -> [MexcFutures.LeverageSetting] {
+        try await rest.send(.get("/api/v1/private/position/leverage/subaccount", query: [
+            "subAccount": subaccount,
+            "symbol": symbol.rawValue,
+        ], authentication: .signed))
+    }
+
+    func setLeverage(_ leverage: Int, of position: MexcFutures.PositionID) async throws {
+        let body = LeverageChange(leverage: leverage, positionId: try NumericID(position))
+        let _: NoData = try await rest.send(.post("/api/v1/private/position/change_leverage", .json(body)))
+    }
+
+    func setLeverage(
+        _ leverage: Int, in symbol: MexcFutures.Symbol, side: MexcFutures.PositionSide,
+        marginMode: MexcFutures.MarginMode
+    ) async throws {
+        let body = LeverageChange(leverage: leverage, symbol: symbol, positionType: side, openType: marginMode)
+        let _: NoData = try await rest.send(.post("/api/v1/private/position/change_leverage", .json(body)))
+    }
+
+    func adjustMargin(of position: MexcFutures.PositionID, by change: Decimal) async throws {
+        guard change != 0 else {
+            throw MexcFutures.ClientError(.invalidRequest, message: "A margin change can't be 0")
+        }
+        let body = MarginChange(
+            positionId: try NumericID(position), amount: change.magnitude, type: change > 0 ? "ADD" : "SUB"
+        )
+        let _: NoData = try await rest.send(.post("/api/v1/private/position/change_margin", .json(body)))
+    }
+
+    func setAddsMarginAutomatically(_ enabled: Bool, of position: MexcFutures.PositionID) async throws {
+        let body = AutoAddMargin(positionId: try NumericID(position), isEnabled: enabled)
+        let _: NoData = try await rest.send(.post("/api/v1/private/position/change_auto_add_im", .json(body)))
+    }
+
     private static func milliseconds(_ date: Date) -> String {
         String(date.millisecondsSince1970)
     }
@@ -75,4 +110,42 @@ private struct Reversal: Encodable, Sendable {
     let positionId: NumericID
     let symbol: MexcFutures.Symbol
     let vol: Decimal
+}
+
+/// A `change_leverage` body: the position when there is one, else the market, side and margin mode.
+///
+/// MEXC's optional `leverageMode` ("advanced" or "simple"), `marginSelected` and `leverageSelected` ("flag
+/// for adjusting all contracts' margin mode" and "leverage mode") aren't sent.
+private struct LeverageChange: Encodable, Sendable {
+    let leverage: Int
+    var positionId: NumericID?
+    var symbol: MexcFutures.Symbol?
+    var positionType: MexcFutures.PositionSide?
+    var openType: MexcFutures.MarginMode?
+
+    init(leverage: Int, positionId: NumericID) {
+        self.leverage = leverage
+        self.positionId = positionId
+    }
+
+    init(
+        leverage: Int, symbol: MexcFutures.Symbol, positionType: MexcFutures.PositionSide,
+        openType: MexcFutures.MarginMode
+    ) {
+        self.leverage = leverage
+        self.symbol = symbol
+        self.positionType = positionType
+        self.openType = openType
+    }
+}
+
+private struct MarginChange: Encodable, Sendable {
+    let positionId: NumericID
+    let amount: Decimal
+    let type: String
+}
+
+private struct AutoAddMargin: Encodable, Sendable {
+    let positionId: NumericID
+    let isEnabled: Bool
 }
