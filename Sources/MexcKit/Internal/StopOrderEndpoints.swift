@@ -30,6 +30,7 @@ struct StopOrderEndpoints: MexcFutures.StopOrderAPI {
     }
 
     func cancel(_ ids: [MexcFutures.StopOrderID]) async throws {
+        guard !ids.isEmpty else { return }
         let body = try ids.map { Cancellation(stopPlanOrderId: try NumericID($0)) }
         let _: NoData = try await rest.send(.post("/api/v1/private/stoporder/cancel", .json(body)))
     }

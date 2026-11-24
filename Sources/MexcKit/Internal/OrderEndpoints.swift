@@ -27,6 +27,7 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
     }
 
     func cancel(_ ids: [MexcFutures.OrderID]) async throws -> [MexcFutures.BatchResult<MexcFutures.OrderID>] {
+        guard !ids.isEmpty else { return [] }
         let body = try ids.map(NumericID.init)
         let items: [BatchItem] = try await rest.send(.post("/api/v1/private/order/cancel", .json(body)))
         return items.map(\.result)
@@ -61,7 +62,8 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
     }
 
     func get(_ ids: [MexcFutures.OrderID]) async throws -> [MexcFutures.Order] {
-        try await rest.send(.get("/api/v1/private/order/batch_query", query: [
+        guard !ids.isEmpty else { return [] }
+        return try await rest.send(.get("/api/v1/private/order/batch_query", query: [
             "order_ids": ids.map(\.rawValue).joined(separator: ","),
         ], authentication: .signed))
     }
@@ -96,7 +98,8 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
         let orders: ArrayOrPage<MexcFutures.Order> = try await rest.send(
             .get("/api/v1/private/order/list/history_orders", query: [
                 "symbol": symbol.rawValue,
-                "states": states.map { String($0.rawValue) }.joined(separator: ","),
+                // No states sends none, for any state, as plan orders do.
+                "states": states.isEmpty ? nil : states.map { String($0.rawValue) }.joined(separator: ","),
                 "category": category.map { String($0.rawValue) },
                 "start_time": start.map(Self.milliseconds),
                 "end_time": end.map(Self.milliseconds),

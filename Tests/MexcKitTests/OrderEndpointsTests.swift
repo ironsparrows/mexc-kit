@@ -148,6 +148,35 @@ struct OrderEndpointsTests {
         #expect(results.map(\.id?.rawValue) == ["101716841474621953", "108885377779302912", "108886241042563584"])
     }
 
+    @Test func `canceling one order throws its own result's error`() async throws {
+        // MEXC's answer lists another order first; only the canceled order's result counts.
+        let transport = FakeTransport(json: #"""
+            {"success":true,"code":0,"data":[{"orderId":2,"errorCode":0},
+            {"orderId":1,"errorCode":2041,"errorMsg":"order state cannot be cancelled"}]}
+            """#)
+        let error = try await #require(throws: MexcError.self) {
+            try await OrderEndpoints(rest: .test(transport: transport)).cancel(MexcFutures.OrderID(rawValue: "1"))
+        }
+        #expect(error.code == .orderNotCancellable)
+    }
+
+    @Test func `getting or canceling no orders sends nothing`() async throws {
+        let transport = FakeTransport()
+        let endpoints = OrderEndpoints(rest: .test(transport: transport))
+        #expect(try await endpoints.get([]).isEmpty)
+        #expect(try await endpoints.cancel([]).isEmpty)
+        #expect(await transport.requests.isEmpty)
+    }
+
+    @Test func `orders in any state send no states`() async throws {
+        let (_, sent) = try await call(json: #"{"success":true,"code":0,"data":[]}"#) {
+            try await $0.history("DOGE_USDT", states: [], category: nil, start: nil, end: nil, page: .first)
+        }
+        #expect(sent.url.absoluteString == """
+            https://api.mexc.com/api/v1/private/order/list/history_orders?page_num=1&page_size=20&symbol=DOGE_USDT
+            """)
+    }
+
     @Test func `canceling by external IDs sends the market with each ID`() async throws {
         let (results, sent) = try await call(json: """
             {"success":true,"code":0,"data":[{"orderId":1,"errorCode":0,"errorMsg":"success"}]}

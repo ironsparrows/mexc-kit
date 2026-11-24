@@ -151,13 +151,13 @@ struct PositionEndpointsTests {
         #expect(sent.headers.contains { $0.name == "Signature" })
     }
 
-    @Test func `closing every position is a signed POST without a body`() async throws {
+    @Test func `closing every position is a signed POST of an empty object`() async throws {
         let transport = FakeTransport(json: #"{"success":true,"code":0,"data":[]}"#)
         try await PositionEndpoints(rest: .test(transport: transport)).closeAll()
         let sent = try #require(await transport.requests.first)
         #expect(sent.method == .post)
         #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/close_all")
-        #expect(sent.body == nil)
+        #expect(sent.bodyText == "{}")
         #expect(sent.headers.contains { $0.name == "Signature" })
     }
 

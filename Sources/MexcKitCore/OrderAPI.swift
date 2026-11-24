@@ -61,9 +61,9 @@ extension MexcFutures {
         /// One page of pending orders in every market. Pages hold at most 100.
         func pending(page: PageRequest) async throws -> [Order]
 
-        /// One page of orders in one market in any of `states`, filtered by the other values that
-        /// aren't `nil`; `start` and `end` limit the time range as MEXC applies it. Pages hold at most
-        /// 100.
+        /// One page of orders in one market in any of `states`, or in any state when `states` is
+        /// empty, filtered by the other values that aren't `nil`; `start` and `end` limit the time range
+        /// as MEXC applies it. Pages hold at most 100.
         func history(
             _ symbol: Symbol, states: [OrderState], category: OrderCategory?, start: Date?, end: Date?,
             page: PageRequest
@@ -93,7 +93,8 @@ extension MexcFutures.OrderAPI {
     /// Throws the ``MexcError`` MEXC reports for the order, such as
     /// ``MexcError/Code/orderNotCancellable``.
     public func cancel(_ id: MexcFutures.OrderID) async throws {
-        if let error = try await cancel([id]).lazy.compactMap(\.error).first {
+        let results = try await cancel([id])
+        if let error = (results.first { $0.id == id } ?? results.first)?.error {
             throw error
         }
     }

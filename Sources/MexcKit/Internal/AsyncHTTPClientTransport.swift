@@ -32,6 +32,8 @@ struct AsyncHTTPClientTransport: HTTPTransport {
             }
             return TransportResponse(status: Int(response.status.code), body: Data(body.readableBytesView))
         } catch {
+            // A cancelled request can fail with another error first, such as a closed connection.
+            if Task.isCancelled { throw CancellationError() }
             throw Self.clientError(for: error)
         }
     }

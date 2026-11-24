@@ -61,7 +61,9 @@ struct PositionEndpoints: MexcFutures.PositionAPI {
     }
 
     func closeAll() async throws {
-        let _: NoData = try await rest.send(.post("/api/v1/private/position/close_all"))
+        // An empty JSON object, sent and signed, as Mexc.Net sends for this endpoint: MEXC documents
+        // no parameters, and a body is the safer guess for its JSON handler.
+        let _: NoData = try await rest.send(.post("/api/v1/private/position/close_all", .json(EmptyObject())))
     }
 
     func leverage(_ symbol: MexcFutures.Symbol, subaccount: String) async throws -> [MexcFutures.LeverageSetting] {
@@ -105,6 +107,9 @@ struct PositionEndpoints: MexcFutures.PositionAPI {
 }
 
 // MARK: - Wire
+
+/// `{}`.
+private struct EmptyObject: Encodable {}
 
 private struct Reversal: Encodable, Sendable {
     let positionId: NumericID
