@@ -8,7 +8,7 @@ struct VocabularyTests {
         case orderType, orderSide, orderState, orderCategory, orderErrorCode, bestPrice
         case selfTradePreventionMode, positionSide, marginMode, positionMode, priceSource
         case triggerCondition, planOrderState, trailingOrderState, profitRatePeriod
-        case contractState, dealTakerSide, dealPositionEffect
+        case contractState, dealTakerSide, dealPositionEffect, positionState
     }
 
     @Test(arguments: Vocabulary.allCases)
@@ -22,6 +22,11 @@ struct VocabularyTests {
         let decoded = try JSONDecoder().decode([MexcFutures.TransferState].self, from: Data(json.utf8))
         #expect(decoded.first?.rawValue == "PROCESSING")
         #expect(String(decoding: try JSONEncoder().encode(decoded), as: UTF8.self) == json)
+    }
+
+    @Test func `an unknown transfer direction decodes and encodes back unchanged`() throws {
+        let json = #"["SIDEWAYS"]"#
+        #expect(try roundTrip(MexcFutures.TransferDirection.self, json) == json)
     }
 
     @Test func `an unknown candle interval decodes and encodes back unchanged`() throws {
@@ -106,6 +111,9 @@ struct VocabularyTests {
         ("TrailingOrderState.canceled", MexcFutures.TrailingOrderState.canceled.rawValue, 4),
         ("ProfitRatePeriod.day", MexcFutures.ProfitRatePeriod.day.rawValue, 1),
         ("ProfitRatePeriod.week", MexcFutures.ProfitRatePeriod.week.rawValue, 2),
+        ("PositionState.holding", MexcFutures.PositionState.holding.rawValue, 1),
+        ("PositionState.systemHeld", MexcFutures.PositionState.systemHeld.rawValue, 2),
+        ("PositionState.closed", MexcFutures.PositionState.closed.rawValue, 3),
         ("Contract.State.enabled", MexcFutures.Contract.State.enabled.rawValue, 0),
         ("Contract.State.paused", MexcFutures.Contract.State.paused.rawValue, 4),
         ("Deal.TakerSide.buy", MexcFutures.Deal.TakerSide.buy.rawValue, 1),
@@ -133,6 +141,13 @@ struct VocabularyTests {
         #expect(state.rawValue == documented)
     }
 
+    @Test(arguments: [(MexcFutures.TransferDirection.incoming, "IN"), (.outgoing, "OUT")])
+    func `each transfer direction has MEXC's documented wire value`(
+        direction: MexcFutures.TransferDirection, documented: String
+    ) {
+        #expect(direction.rawValue == documented)
+    }
+
     private func roundTrip(_ vocabulary: Vocabulary, _ json: String) throws -> String {
         switch vocabulary {
         case .orderType: try roundTrip(MexcFutures.OrderType.self, json)
@@ -153,6 +168,7 @@ struct VocabularyTests {
         case .contractState: try roundTrip(MexcFutures.Contract.State.self, json)
         case .dealTakerSide: try roundTrip(MexcFutures.Deal.TakerSide.self, json)
         case .dealPositionEffect: try roundTrip(MexcFutures.Deal.PositionEffect.self, json)
+        case .positionState: try roundTrip(MexcFutures.PositionState.self, json)
         }
     }
 

@@ -119,4 +119,8 @@ extension KeyedDecodingContainer {
     func millisecondDate(forKey key: Key) throws -> Date {
         try decode(MillisecondTimestamp.self, forKey: key).date
     }
+
+    func millisecondDateIfPresent(forKey key: Key) throws -> Date? {
+        try decodeIfPresent(MillisecondTimestamp.self, forKey: key)?.date
+    }
 }

@@ -27,6 +27,10 @@ struct PublicSurfaceTests {
             MexcFutures.Deal.self, MexcFutures.Deal.TakerSide.self, MexcFutures.Deal.PositionEffect.self,
             MexcFutures.FundingRate.self, MexcFutures.FundingRate.Settlement.self, MexcFutures.InsuranceFund.self,
             MexcFutures.PriceSnapshot.self,
+            (any MexcFutures.AccountAPI).self, (any MexcFutures.PositionAPI).self, MexcFutures.Balance.self,
+            MexcFutures.Transfer.self, MexcFutures.TransferDirection.self, MexcFutures.ProfitRate.self,
+            MexcFutures.PositionRiskLimit.self, MexcFutures.Position.self, MexcFutures.PositionState.self,
+            MexcFutures.FundingPayment.self, MexcFutures.LeverageSetting.self,
         ]
         _ = types
     }

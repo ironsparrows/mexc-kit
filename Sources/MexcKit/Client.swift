@@ -8,6 +8,8 @@ extension MexcFutures {
     /// ``ClientError/Reason/missingCredentials`` before anything is sent.
     public final class Client: API {
         public let market: any MarketAPI
+        public let account: any AccountAPI
+        public let position: any PositionAPI
         let rest: RESTClient
         let clock: ServerClock
 
@@ -45,6 +47,8 @@ extension MexcFutures {
                 timeout: configuration.timeout
             )
             market = MarketEndpoints(rest: rest)
+            account = AccountEndpoints(rest: rest)
+            position = PositionEndpoints(rest: rest)
         }
 
         /// Measures the offset between this device's clock and MEXC's, and applies it to the

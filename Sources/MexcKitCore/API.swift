@@ -6,5 +6,9 @@ extension MexcFutures {
     public protocol API: Sendable {
         /// Public market data. Never needs credentials.
         var market: any MarketAPI { get }
+        /// The futures account: balances, transfers, profit rate, risk limits and position mode.
+        var account: any AccountAPI { get }
+        /// Open and closed positions, funding payments and leverage.
+        var position: any PositionAPI { get }
     }
 }

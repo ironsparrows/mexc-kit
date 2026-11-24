@@ -100,7 +100,7 @@ struct RESTClient: Sendable {
 
 extension Date {
     /// Whole milliseconds since 1970, rounded down.
-    fileprivate var millisecondsSince1970: Int64 { Int64((timeIntervalSince1970 * 1000).rounded(.down)) }
+    var millisecondsSince1970: Int64 { Int64((timeIntervalSince1970 * 1000).rounded(.down)) }
 }
 
 extension Duration {

@@ -152,6 +152,17 @@ extension MexcFutures {
         public static let hedge = Self(rawValue: 1)
         public static let oneWay = Self(rawValue: 2)
     }
+
+    /// A position's lifecycle state.
+    public struct PositionState: RawRepresentable, Hashable, Sendable, Codable {
+        public let rawValue: Int
+        public init(rawValue: Int) { self.rawValue = rawValue }
+
+        public static let holding = Self(rawValue: 1)
+        /// MEXC's "system-held".
+        public static let systemHeld = Self(rawValue: 2)
+        public static let closed = Self(rawValue: 3)
+    }
 }
 
 // MARK: - Triggers
@@ -217,6 +228,17 @@ extension MexcFutures {
         public static let waiting = Self(rawValue: "WAIT")
         public static let succeeded = Self(rawValue: "SUCCESS")
         public static let failed = Self(rawValue: "FAILED")
+    }
+
+    /// Whether a transfer moved an asset into the futures account or out of it.
+    public struct TransferDirection: RawRepresentable, Hashable, Sendable, Codable {
+        public let rawValue: String
+        public init(rawValue: String) { self.rawValue = rawValue }
+
+        /// Into the futures account.
+        public static let incoming = Self(rawValue: "IN")
+        /// Out of the futures account.
+        public static let outgoing = Self(rawValue: "OUT")
     }
 
     /// The period a profit rate covers.
