@@ -11,7 +11,13 @@ struct AccountAPIDefaultsTests {
         _ = try await account.transfers()
         _ = try await account.transfers(page: .init(number: 2, size: 100))
         _ = try await account.riskLimits()
-        #expect(await recorder.calls.value == ["transfers nil nil nil 1 20", "transfers nil nil nil 2 100", "riskLimits nil"])
+        _ = try await account.feeRates()
+        _ = try await account.feeDeductions("BTC_USDT")
+        _ = try await account.feeDeductions("BTC_USDT", page: .init(number: 2, size: 100))
+        #expect(await recorder.calls.value == [
+            "transfers nil nil nil 1 20", "transfers nil nil nil 2 100", "riskLimits nil", "feeRates nil",
+            "feeDeductions BTC_USDT [] nil nil 1 20", "feeDeductions BTC_USDT [] nil nil 2 100",
+        ])
     }
 }
 
@@ -44,4 +50,27 @@ private struct RecordingAccount: MexcFutures.AccountAPI {
         throw CancellationError()
     }
     func positionMode() async throws -> MexcFutures.PositionMode { .hedge }
+
+    func feeRates(_ symbol: MexcFutures.Symbol?) async throws -> MexcFutures.FeeRates {
+        await calls.record("feeRates \(symbol?.rawValue ?? "nil")")
+        return .init(
+            symbol: symbol, maker: 0, taker: 0, standardMaker: 0, standardTaker: 0, mode: .normal, joinsDiscount: false,
+            receivesDiscount: false, discountRate: 1, joinsDeduction: false, receivesDeduction: false, deductionRate: 1,
+            tradedAmount: 0, walletBalance: nil, tiers: [], tierTradedAmount: nil, leverage: nil
+        )
+    }
+
+    func feeDeductions(
+        _ symbol: MexcFutures.Symbol, fills: [MexcFutures.FillID], start: Date?, end: Date?,
+        page: MexcFutures.PageRequest
+    ) async throws -> [MexcFutures.FeeDeduction] {
+        let dates = "\(start == nil ? "nil" : "set") \(end == nil ? "nil" : "set")"
+        await calls.record("feeDeductions \(symbol) \(fills.map(\.rawValue)) \(dates) \(page.number) \(page.size)")
+        return []
+    }
+
+    func feeTotals() async throws -> MexcFutures.FeeTotals { .init(paid: 0, saved: 0) }
+    func discountUsage() async throws -> MexcFutures.DiscountUsage { .init(usesSpotDiscount: false, usesDeduction: false) }
+    func feeDeductionAssets() async throws -> [MexcFutures.FeeDeductionAsset] { [] }
+    func feeDiscounts() async throws -> [MexcFutures.FeeDiscount] { [] }
 }

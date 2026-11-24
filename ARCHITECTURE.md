@@ -68,4 +68,7 @@ One word per concept in code, comments and docs.
 | volume | size in contracts | `vol` |
 | contract | a futures market: its symbol and trading rules | "contract", "contract detail" |
 | balance | the futures account's holdings of one asset | "assets", "asset" |
+| amount | a traded value, as opposed to a volume in contracts; MEXC doesn't document its unit | `dealAmount`, `tieredDealAmount` |
+| fee discount | a lower fee rate from MEXC's spot fee discount | `contractFeeDiscountConfig`, `joinDiscount`, `useFeeDiscount` |
+| fee deduction | a fee paid from MX, MXPOINT or a trial bonus | `feeDeductConfigs`, `deductType`, `useFeeDeduct` |
 | funding payment | the funding one position paid or received at a settlement | "funding records", `holdFee` |

@@ -8,7 +8,7 @@ struct VocabularyTests {
         case orderType, orderSide, orderState, orderCategory, orderErrorCode, bestPrice
         case selfTradePreventionMode, positionSide, marginMode, positionMode, priceSource
         case triggerCondition, planOrderState, trailingOrderState, profitRatePeriod
-        case contractState, dealTakerSide, dealPositionEffect, positionState
+        case contractState, dealTakerSide, dealPositionEffect, positionState, feeDeductionSource
     }
 
     @Test(arguments: Vocabulary.allCases)
@@ -27,6 +27,16 @@ struct VocabularyTests {
     @Test func `an unknown transfer direction decodes and encodes back unchanged`() throws {
         let json = #"["SIDEWAYS"]"#
         #expect(try roundTrip(MexcFutures.TransferDirection.self, json) == json)
+    }
+
+    @Test func `an unknown fee rate mode decodes and encodes back unchanged`() throws {
+        let json = #"["PROMO"]"#
+        #expect(try roundTrip(MexcFutures.FeeRates.Mode.self, json) == json)
+    }
+
+    @Test(arguments: [(MexcFutures.FeeRates.Mode.normal, "NORMAL"), (.leverage, "LEVERAGE"), (.tiered, "TIERED")])
+    func `each fee rate mode has MEXC's documented wire value`(mode: MexcFutures.FeeRates.Mode, documented: String) {
+        #expect(mode.rawValue == documented)
     }
 
     @Test func `an unknown candle interval decodes and encodes back unchanged`() throws {
@@ -122,6 +132,9 @@ struct VocabularyTests {
         ("Deal.TakerSide.sell", MexcFutures.Deal.TakerSide.sell.rawValue, 2),
         ("Deal.PositionEffect.bothOpened", MexcFutures.Deal.PositionEffect.bothOpened.rawValue, 1),
         ("Deal.PositionEffect.mixed", MexcFutures.Deal.PositionEffect.mixed.rawValue, 3),
+        ("FeeDeduction.Source.notDeducted", MexcFutures.FeeDeduction.Source.notDeducted.rawValue, 0),
+        ("FeeDeduction.Source.mxPoint", MexcFutures.FeeDeduction.Source.mxPoint.rawValue, 1),
+        ("FeeDeduction.Source.trialBonus", MexcFutures.FeeDeduction.Source.trialBonus.rawValue, 2),
     ])
     func `each member has MEXC's documented wire value`(member: String, rawValue: Int, documented: Int) {
         #expect(rawValue == documented, "\(member)")
@@ -171,6 +184,7 @@ struct VocabularyTests {
         case .dealTakerSide: try roundTrip(MexcFutures.Deal.TakerSide.self, json)
         case .dealPositionEffect: try roundTrip(MexcFutures.Deal.PositionEffect.self, json)
         case .positionState: try roundTrip(MexcFutures.PositionState.self, json)
+        case .feeDeductionSource: try roundTrip(MexcFutures.FeeDeduction.Source.self, json)
         }
     }
 

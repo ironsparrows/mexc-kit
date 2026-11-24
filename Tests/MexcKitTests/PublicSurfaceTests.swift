@@ -35,6 +35,10 @@ struct PublicSurfaceTests {
             MexcFutures.OrderRequest.Options.self, MexcFutures.AttachedStop.self, MexcFutures.Order.self,
             MexcFutures.Fill.self, MexcFutures.FillID.self, MexcFutures.PlacedOrder.self,
             MexcFutures.PendingOrderCounts.self, MexcFutures.BatchResult<MexcFutures.OrderID>.self,
+            MexcFutures.FeeRates.self, MexcFutures.FeeRates.Mode.self, MexcFutures.FeeRates.Tier.self,
+            MexcFutures.FeeTotals.self, MexcFutures.DiscountUsage.self, MexcFutures.FeeDeductionAsset.self,
+            MexcFutures.FeeDiscount.self, MexcFutures.FeeDiscount.Level.self, MexcFutures.FeeDeduction.self,
+            MexcFutures.FeeDeduction.Source.self,
         ]
         _ = types
     }

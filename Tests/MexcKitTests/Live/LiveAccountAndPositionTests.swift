@@ -18,6 +18,13 @@ struct LiveAccountAndPositionTests {
         _ = try await client.account.profitRate(.week)
         _ = try await client.account.riskLimits(Self.btc)
         _ = try await client.account.positionMode()
+        _ = try await client.account.feeRates()
+        _ = try await client.account.feeRates(Self.btc)
+        _ = try await client.account.feeTotals()
+        _ = try await client.account.discountUsage()
+        _ = try await client.account.feeDeductionAssets()
+        _ = try await client.account.feeDiscounts()
+        _ = try await client.account.feeDeductions(Self.btc)
     }
 
     @Test func `positions decode`() async throws {

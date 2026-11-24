@@ -1,0 +1,1 @@
+{"success":true,"code":200,"message":"success","data":[{"id":1,"currency":"MX","state":"ENABLED","discountConfig":"[{\"day\":1,\"discount\":0.5,\"level\":1,\"volMax\":2147483647,\"volMin\":500}]","ineffectiveDiscountConfig":"","operator":"","createTime":1699775818000,"updateTime":1732982217000,"enabled":true}]}
