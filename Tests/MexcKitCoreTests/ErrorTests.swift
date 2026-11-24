@@ -125,4 +125,15 @@ struct ErrorTests {
             detailed.localizedDescription == "MEXC rejected the stream subscription: Contract [NOPE_USDT] not exists"
         )
     }
+
+    @Test func `a network failure keeps its underlying error out of the localized description`() {
+        struct Offline: Error, CustomStringConvertible {
+            var description: String { "Network is down" }
+        }
+        let error = MexcFutures.ClientError(.connectionFailed, underlyingError: Offline())
+        #expect(error.description == "MEXC client error: connectionFailed (Network is down)")
+        #expect((error as any Error).localizedDescription == "The connection to MEXC failed")
+        #expect(error.underlyingError is Offline)
+        #expect((MexcFutures.ClientError(.timedOut) as any Error).localizedDescription == "MEXC didn't answer in time")
+    }
 }

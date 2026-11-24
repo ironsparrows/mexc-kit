@@ -1,4 +1,4 @@
-import Foundation
+package import Foundation
 
 // MEXC sends one field as a JSON number in one response and as a string in another, and uses
 // milliseconds for most timestamps but seconds for candles. Wire types decode such fields through
@@ -79,10 +79,10 @@ struct FlexibleString: Decodable {
 }
 
 /// A point in time sent as whole milliseconds since 1970, as a JSON integer or a string.
-struct MillisecondTimestamp: Decodable {
-    let date: Date
+package struct MillisecondTimestamp: Decodable, Sendable {
+    package let date: Date
 
-    init(from decoder: any Decoder) throws {
+    package init(from decoder: any Decoder) throws {
         let milliseconds = try decodeInteger(from: decoder)
         date = Date(timeIntervalSince1970: Double(milliseconds) / 1000)
     }

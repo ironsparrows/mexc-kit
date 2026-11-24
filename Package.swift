@@ -23,6 +23,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", "3.0.0"..<"6.0.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.100.0"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.37.1"),
         .package(url: "https://github.com/vapor/websocket-kit.git", from: "2.16.2"),
     ],
@@ -37,6 +38,8 @@ let package = Package(
                 "MexcKitCore",
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "WebSocketKit", package: "websocket-kit"),
             ],
             swiftSettings: swiftSettings
@@ -48,7 +51,13 @@ let package = Package(
         ),
         .testTarget(
             name: "MexcKitTests",
-            dependencies: ["MexcKit"],
+            dependencies: [
+                "MexcKit",
+                .product(name: "AsyncHTTPClient", package: "async-http-client"),
+                .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "NIOHTTP1", package: "swift-nio"),
+                .product(name: "NIOPosix", package: "swift-nio"),
+            ],
             swiftSettings: swiftSettings
         ),
     ]

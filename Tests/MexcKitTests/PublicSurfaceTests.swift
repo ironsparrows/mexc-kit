@@ -19,6 +19,7 @@ struct PublicSurfaceTests {
             MexcFutures.PositionMode.self, MexcFutures.PriceSource.self, MexcFutures.TriggerCondition.self,
             MexcFutures.PlanOrderState.self, MexcFutures.TrailingOrderState.self, MexcFutures.TransferState.self,
             MexcFutures.ProfitRatePeriod.self,
+            MexcFutures.Client.self, MexcFutures.Client.Configuration.self,
         ]
         _ = types
     }

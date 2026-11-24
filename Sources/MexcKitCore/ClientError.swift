@@ -3,21 +3,34 @@ public import Foundation
 extension MexcFutures {
     /// A failure the client detected itself, as opposed to one MEXC reported (``MexcError``).
     ///
+    /// Network failures, such as a timeout or no connection, arrive as this error too, with the
+    /// network library's error in ``underlyingError``. Cancelling the task throws `CancellationError`
+    /// instead.
+    ///
     /// `localizedDescription` explains the reason in a sentence, followed by ``message`` when there
     /// is one.
     public struct ClientError: Error, Sendable, CustomStringConvertible {
         public var reason: Reason
         /// Details for diagnostics, such as the text of MEXC's stream error.
         public var message: String?
+        /// The error that caused this one, such as the network library's error behind
+        /// ``Reason/timedOut``.
+        ///
+        /// For diagnostics only: its type differs between platforms and library versions, so don't
+        /// match on it.
+        public var underlyingError: (any Error)?
 
-        public init(_ reason: Reason, message: String? = nil) {
+        public init(_ reason: Reason, message: String? = nil, underlyingError: (any Error)? = nil) {
             self.reason = reason
             self.message = message
+            self.underlyingError = underlyingError
         }
 
         public var description: String {
-            guard let message, !message.isEmpty else { return "MEXC client error: \(reason)" }
-            return "MEXC client error: \(reason): \(message)"
+            var text = "MEXC client error: \(reason)"
+            if let message, !message.isEmpty { text += ": \(message)" }
+            if let underlyingError { text += " (\(underlyingError))" }
+            return text
         }
     }
 }
@@ -58,5 +71,19 @@ extension MexcFutures.ClientError {
         )
         /// The stream connection closed.
         public static let connectionClosed = Self("connectionClosed", summary: "The stream connection closed")
+        /// MEXC didn't answer a request within the configured timeout.
+        ///
+        /// The request may still have reached MEXC. Before repeating one that changes something, such
+        /// as placing an order, check whether it took effect.
+        public static let timedOut = Self("timedOut", summary: "MEXC didn't answer in time")
+        /// The client couldn't connect to MEXC, or the connection failed before the whole response
+        /// arrived.
+        ///
+        /// When the connection failed after the request was sent, the request may still have reached
+        /// MEXC. Before repeating one that changes something, such as placing an order, check whether
+        /// it took effect.
+        public static let connectionFailed = Self(
+            "connectionFailed", summary: "The connection to MEXC failed"
+        )
     }
 }

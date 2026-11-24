@@ -12,14 +12,20 @@ Your app
 
 - Dependencies point one way: app, `MexcKit`, `MexcKitCore`, platform.
 - `MexcKitCore` depends only on Foundation. It is a product so a module that needs only the contract (protocols and models, for mocking or dependency injection) doesn't compile NIO or BoringSSL.
-- `MexcKit` depends on AsyncHTTPClient (REST), WebSocketKit (streams) and swift-crypto (HMAC request signing; it wraps CryptoKit on Apple platforms). None of their types appears in a public signature: `import MexcKit` is all an app writes.
+- `MexcKit` depends on AsyncHTTPClient (REST), SwiftNIO (the byte, header and time types AsyncHTTPClient's API takes), WebSocketKit (streams) and swift-crypto (HMAC request signing; it wraps CryptoKit on Apple platforms). None of their types appears in a public signature: `import MexcKit` is all an app writes. Only the transport conformers import AsyncHTTPClient, SwiftNIO and WebSocketKit.
 - Every API type is nested in `MexcFutures`, so names like `Order` or `Position` can't collide with an app's types or another exchange SDK. Only `MexcError` and `MexcCredentials` sit at the top level, where a future spot module can share them.
 
 ## Settings
 
 Every target builds in the Swift 6 language mode with `ApproachableConcurrency`, `ExistentialAny`, `InternalImportsByDefault` and `MemberImportVisibility`. Code is nonisolated by default: no target sets a default actor isolation, so an app on any actor can call the SDK. Mark CPU-heavy work, such as decoding large responses, `@concurrent` so it leaves the caller's actor.
 
-Import `Foundation` with a plain `import Foundation`, not `FoundationEssentials`. Write `public import Foundation` only in a file whose public signatures use a Foundation type.
+Import `Foundation` with a plain `import Foundation`, not `FoundationEssentials`. Write `public import Foundation` only in a file whose public signatures use a Foundation type, and `package import Foundation` only in one whose `package` signatures do.
+
+## Errors
+
+- `MexcError`: a failure MEXC reported, from its response envelope or an HTTP error status.
+- `MexcFutures.ClientError`: a failure the client detected, including network failures (`.timedOut`, `.connectionFailed`). AsyncHTTPClient's, SwiftNIO's and Network.framework's errors never reach apps directly: the transport wraps them, keeping the original in `underlyingError` for diagnostics. This departs from passing platform errors through, because these are vendor types that differ by platform and would make apps import AsyncHTTPClient to catch them.
+- `DecodingError` and `CancellationError` pass through unchanged.
 
 ## Access
 
@@ -34,7 +40,7 @@ Import `Foundation` with a plain `import Foundation`, not `FoundationEssentials`
 
 - In `MexcKitCore` and `MexcKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
 - A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them.
-- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitTests` for the client.
+- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitTests` for the client. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, and `Support/` holds fakes and helpers.
 
 Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out:
 
