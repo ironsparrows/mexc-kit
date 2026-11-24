@@ -21,6 +21,7 @@ struct PublicSurfaceTests {
             MexcFutures.ProfitRatePeriod.self,
             MexcFutures.Client.self, MexcFutures.Client.Configuration.self,
             (any MexcFutures.API).self, (any MexcFutures.MarketAPI).self, MexcFutures.CandlePrice.self,
+            (any MexcFutures.StreamAPI).self, MexcFutures.TickerSummary.self,
             MexcFutures.Contract.self, MexcFutures.Contract.RiskLimit.self, MexcFutures.Contract.State.self,
             MexcFutures.Ticker.self, MexcFutures.OrderBook.self, MexcFutures.OrderBook.Level.self,
             MexcFutures.OrderBook.Change.self, MexcFutures.Candle.self, MexcFutures.Candle.Interval.self,

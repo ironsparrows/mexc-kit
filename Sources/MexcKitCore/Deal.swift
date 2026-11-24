@@ -14,6 +14,10 @@ extension MexcFutures {
         public let takerSide: TakerSide
         public let positionEffect: PositionEffect
         /// Whether the taker and the maker are the same account.
+        ///
+        /// MEXC documents its flag this way: 1 is a self-trade, 2 isn't. In public trades read on
+        /// 2026-11-24, about half carried it, from the stream and the REST endpoint alike, so don't
+        /// rely on it until it's verified.
         public let isSelfTrade: Bool
         public let time: Date
 

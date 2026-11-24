@@ -43,6 +43,7 @@ let package = Package(
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
+                .product(name: "SwiftProtobuf", package: "swift-protobuf"),
                 .product(name: "WebSocketKit", package: "websocket-kit"),
             ],
             swiftSettings: swiftSettings
@@ -77,11 +78,15 @@ let package = Package(
             name: "MexcKitTests",
             dependencies: [
                 "MexcKit",
+                "MexcKitProtobuf",
                 "MexcKitTestSupport",
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
+                .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
+                .product(name: "NIOWebSocket", package: "swift-nio"),
+                .product(name: "SwiftProtobuf", package: "swift-protobuf"),
             ],
             resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings

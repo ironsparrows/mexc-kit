@@ -20,5 +20,7 @@ extension MexcFutures {
         var trailingOrder: any TrailingOrderAPI { get }
         /// Self-trade prevention groups, for market maker accounts.
         var selfTradePrevention: any SelfTradePreventionAPI { get }
+        /// Live market data pushed over a WebSocket. Never needs credentials.
+        var stream: any StreamAPI { get }
     }
 }

@@ -13,7 +13,7 @@ Your app
 
 - Dependencies point one way: app, `MexcKit`, `MexcKitCore` or `MexcKitProtobuf`, platform.
 - `MexcKitCore` depends only on Foundation. It is a product so a module that needs only the contract (protocols and models, for mocking or dependency injection) doesn't compile NIO or BoringSSL.
-- `MexcKit` depends on AsyncHTTPClient (REST), SwiftNIO (the byte, header and time types AsyncHTTPClient's API takes), WebSocketKit (streams) and swift-crypto (HMAC request signing; it wraps CryptoKit on Apple platforms). None of their types appears in a public signature: `import MexcKit` is all an app writes. Only the transport conformers import AsyncHTTPClient, SwiftNIO and WebSocketKit.
+- `MexcKit` depends on AsyncHTTPClient (REST), SwiftNIO (the byte, header and time types AsyncHTTPClient's API takes), WebSocketKit (streams), SwiftProtobuf (reading the streams' pushes) and swift-crypto (HMAC request signing; it wraps CryptoKit on Apple platforms). None of their types appears in a public signature: `import MexcKit` is all an app writes. Only the transport conformers import AsyncHTTPClient, SwiftNIO and WebSocketKit.
 - `MexcKitProtobuf` holds the Swift that swift-protobuf generates from MEXC's `.proto` files, checked in so an app's build compiles plain Swift and runs no build plugin. It depends only on swift-protobuf's runtime, at least the version that generated the code. MEXC's messages have no Protobuf package, so they get bare names such as `Deal` and `Contract`; with `package` access they never reach an app or a public signature, which uses the `MexcFutures` models instead. Its `README.md` records the source commit and the regeneration command.
 - Every API type is nested in `MexcFutures`, so names like `Order` or `Position` can't collide with an app's types or another exchange SDK. Only `MexcError` and `MexcCredentials` sit at the top level, where a future spot module can share them.
 
@@ -82,3 +82,5 @@ One word per concept in code, comments and docs.
 | fee discount | a lower fee rate from MEXC's spot fee discount | `contractFeeDiscountConfig`, `joinDiscount`, `useFeeDiscount` |
 | fee deduction | a fee paid from MX, MXPOINT or a trial bonus | `feeDeductConfigs`, `deductType`, `useFeeDeduct` |
 | funding payment | the funding one position paid or received at a settlement | "funding records", `holdFee` |
+| stream | values MEXC pushes over the WebSocket, such as tickers or deals | "channel", `sub.*`, `push.*` |
+| push | one frame of a stream's values, a binary `ContractWrapper` | `push.*` |

@@ -3,7 +3,7 @@ public import Foundation
 extension MexcFutures {
     /// The client for MEXC's futures API.
     ///
-    /// A client is a reference: every holder shares its clock offset. Public endpoints never read
+    /// A client is a reference: every holder shares its clock offset and stream connection. Public endpoints never read
     /// credentials. A private endpoint on a client without credentials throws
     /// ``ClientError/Reason/missingCredentials`` before anything is sent.
     public final class Client: API {
@@ -15,6 +15,7 @@ extension MexcFutures {
         public let stopOrder: any StopOrderAPI
         public let trailingOrder: any TrailingOrderAPI
         public let selfTradePrevention: any SelfTradePreventionAPI
+        public let stream: any StreamAPI
         let rest: RESTClient
         let clock: ServerClock
 
@@ -39,6 +40,7 @@ extension MexcFutures {
             credentialsProvider credentials: CredentialsProvider?,
             configuration: Configuration,
             transport: any HTTPTransport = AsyncHTTPClientTransport(),
+            webSocketTransport: any WebSocketTransport = WebSocketKitTransport(),
             clock: ServerClock = ServerClock()
         ) {
             self.clock = clock
@@ -59,6 +61,9 @@ extension MexcFutures {
             stopOrder = StopOrderEndpoints(rest: rest)
             trailingOrder = TrailingOrderEndpoints(rest: rest)
             selfTradePrevention = SelfTradePreventionEndpoints(rest: rest)
+            stream = StreamEndpoints(
+                connection: StreamConnection(url: configuration.streamURL, transport: webSocketTransport)
+            )
         }
 
         /// Measures the offset between this device's clock and MEXC's, and applies it to the
@@ -78,6 +83,10 @@ extension MexcFutures.Client {
     public struct Configuration: Sendable {
         /// The REST base URL. Defaults to `https://api.mexc.com`.
         public var restURL: URL
+        /// The WebSocket URL of the streams. Defaults to MEXC's Protobuf endpoint,
+        /// `wss://contract.mexc.com/edge?Trans-Protocol=Protobuf`; the streams read Protobuf pushes
+        /// only.
+        public var streamURL: URL
         /// How long after its `Request-Time` MEXC still accepts a private request, sent in the
         /// `Recv-Window` header in whole milliseconds. `nil` sends no header, and MEXC allows 10
         /// seconds. MEXC accepts at most 60 seconds; the client sends the value as it is.
@@ -98,11 +107,13 @@ extension MexcFutures.Client {
         /// Creates a configuration; every setting has a default.
         public init(
             restURL: URL = URL(string: "https://api.mexc.com")!,
+            streamURL: URL = URL(string: "wss://contract.mexc.com/edge?Trans-Protocol=Protobuf")!,
             receiveWindow: Duration? = nil,
             language: String? = nil,
             timeout: Duration = .seconds(30)
         ) {
             self.restURL = restURL
+            self.streamURL = streamURL
             self.receiveWindow = receiveWindow
             self.language = language
             self.timeout = timeout
