@@ -19,18 +19,17 @@ visionOS 1. Linux is a target platform, not yet built or tested. watchOS is not 
 
 ## Installation
 
-MexcKit isn't published yet. Until it is, add it to your package from a local checkout, then add
-the `MexcKit` product to your target. The `package:` value is the checkout's folder name:
+Add the package with Swift Package Manager, then add the `MexcKit` product to your target:
 
 ```swift
-.package(path: "../MexcKit"),
+.package(url: "https://github.com/dioKaratzas/mexc-kit.git", from: "0.1.0"),
 ```
 
 ```swift
-.product(name: "MexcKit", package: "MexcKit"),
+.product(name: "MexcKit", package: "mexc-kit"),
 ```
 
-In an Xcode project, use File > Add Package Dependencies > Add Local.
+In an Xcode project, use File > Add Package Dependencies and enter the repository URL.
 
 ## Quick start
 
@@ -63,3 +62,8 @@ xcodebuild docbuild -scheme MexcKit -destination 'generic/platform=macOS'
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks, the live tests and the commit style, and
 [ARCHITECTURE.md](ARCHITECTURE.md) for the layout and vocabulary.
+
+## License
+
+Apache License 2.0; see [LICENSE](LICENSE). MEXC's `.proto` files in `Sources/MexcKitProtobuf/Proto`
+are also Apache 2.0, under their own [LICENSE](Sources/MexcKitProtobuf/Proto/LICENSE).
