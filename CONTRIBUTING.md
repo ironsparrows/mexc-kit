@@ -32,6 +32,14 @@ swift test
 xcodebuild build -scheme MexcKit -destination 'generic/platform=iOS'
 ```
 
+```bash
+xcodebuild docbuild -scheme MexcKit -destination 'generic/platform=macOS'
+```
+
+The documentation build must show no warnings from `MexcKit`, `MexcKitCore` or `MexcKitProtobuf`; the dependencies' own warnings are theirs. `MexcKit`'s archive is the documentation apps read: it includes every `MexcKitCore` type, which `MexcKitCore`'s own archive repeats for modules that import it alone.
+
+The code of the documentation's examples and the README's lives in `Tests/MexcKitTests/DocumentationExamples.swift`: `swift build --build-tests` compiles it, and `swift test` checks that each example's lines appear, in order, in one of its functions. Change both together.
+
 `-Xswiftc -warnings-as-errors` applies to this package's targets only: SwiftPM compiles dependencies with their warnings suppressed.
 
 Linux is a supported platform but has no local check yet. `swift build` and `swift test` on Linux are unverified until CI or a Linux machine runs them, including the `MexcKitTestSupport` target, which imports Testing.
@@ -44,7 +52,20 @@ Linux is a supported platform but has no local check yet. `swift build` and `swi
 
 ### Running live tests
 
-Live tests run when an API key and its secret are set; otherwise they skip. There is no other switch. They call MEXC with that key and account, and live tests that place small real orders run with it too, so use a key and an account you accept that for.
+Live tests run when an API key and its secret are set; otherwise they skip. There is no other switch: with keys set, every live suite runs, including those that place real orders, in a plain `swift test` and in Xcode's Test action too. `swift test --skip Live` leaves them out.
+
+**Three suites place small real orders and open real positions** on that account, with real fees, in BTC_USDT at the contract's minimum volume and 5× isolated leverage. They close and cancel what they open, but they also close whatever BTC_USDT long they find and cancel every pending BTC_USDT order, so use an account with no BTC_USDT orders or positions of its own. A failure partway can leave an order or a position open, the BTC_USDT long at 5× isolated leverage, or the ETH_USDT short leverage changed: check the account after a failed run.
+
+| Suite | What it does |
+|---|---|
+| Live REST | Reads public market data and synchronizes the clock. |
+| Live streams | Opens the public streams and checks their pushes decode. |
+| Live order book sync | Keeps BTC_USDT's order book for a few changes. |
+| Live account and positions | Reads the account, fees and positions. |
+| Live position settings and self-trade prevention | Changes the ETH_USDT short leverage and sets it back; reads the position mode and the self-trade prevention groups. The groups test fails on an account that isn't a market maker's. |
+| Live orders | **Places orders:** opens and closes a BTC_USDT long; rests a post-only buy 5% below the market, changes it, and cancels every pending BTC_USDT order. |
+| Live plan, stop and trailing orders | **Places orders:** opens a BTC_USDT long, adds a stop-loss 10% below the market, a trailing close and a plan order that both act only 50% above it, cancels them and closes the long. |
+| Live account streams | **Places orders:** opens and closes a BTC_USDT long; then opens another long and, on it, places and cancels a stop order, a trailing order, a plan order and a limit order with attached stops. The account streams are open throughout, and their pushes must decode. |
 
 Set them in the environment, reading them without echo so they stay out of your shell history:
 
