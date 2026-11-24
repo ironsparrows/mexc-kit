@@ -93,6 +93,15 @@ struct StreamEndpointsTests {
         #expect(change.time == Date(timeIntervalSince1970: 1_795_506_146.872))
     }
 
+    @Test func `order books of a limit MEXC doesn't take throw invalidRequest before subscribing`() async throws {
+        let books = Task { [streams] in
+            for try await _ in streams.orderBooks("BTC_USDT", limit: 50) {}
+        }
+        let error = try await #require(throws: MexcFutures.ClientError.self) { try await books.value }
+        #expect(error.reason == .invalidRequest)
+        #expect(await server.connectAttempts == 0)
+    }
+
     @Test func `an order book of a few levels decodes`() async throws {
         let book = try await first(
             of: streams.orderBooks("SOL_USDT", limit: 5),

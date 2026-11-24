@@ -21,7 +21,8 @@ extension MexcFutures {
     ///   also ends account streams already running when it happens on a reconnect, as does an error
     ///   the credentials provider throws, which ends them unchanged;
     /// - MEXC doesn't acknowledge the subscription or the login within 10 seconds:
-    ///   ``ClientError/Reason/acknowledgementTimedOut``;
+    ///   ``ClientError/Reason/acknowledgementTimedOut``. The connection then starts over, and streams
+    ///   MEXC had acknowledged before subscribe again;
     /// - connecting fails before MEXC ever acknowledged the subscription:
     ///   ``ClientError/Reason/connectionFailed``, including when it doesn't open within 10 seconds;
     /// - a stream of the same market is open with values MEXC's pushes can't tell apart, such as
@@ -67,8 +68,8 @@ extension MexcFutures {
 
         /// The market's order book with `limit` levels a side, each time it changes.
         ///
-        /// MEXC accepts a `limit` of 5, 10 or 20. A consumer that falls behind gets the latest order
-        /// book only.
+        /// MEXC accepts a `limit` of 5, 10 or 20; another throws ``ClientError/Reason/invalidRequest``.
+        /// A consumer that falls behind gets the latest order book only.
         ///
         /// MEXC's pushes don't say their limit, so a market's order books can be streamed with one
         /// `limit` at a time: another throws ``ClientError/Reason/invalidRequest`` while the first is

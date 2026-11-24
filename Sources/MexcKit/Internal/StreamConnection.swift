@@ -7,8 +7,9 @@ import SwiftProtobuf
 ///
 /// It connects when the first subscription starts and closes when the last one ends. Subscribe
 /// requests go up as JSON text frames, one at a time, each waiting for MEXC's acknowledgement before
-/// the next, because MEXC's error frame doesn't say which request failed; unsubscribe requests wait
-/// for nothing. Pushes come down as binary `ContractWrapper` frames, in order, to every consumer of
+/// the next, because MEXC's error frame doesn't say which request failed; when one doesn't come in
+/// time, the connection starts over, since a late one couldn't be told from the next request's.
+/// Unsubscribe requests wait for nothing. Pushes come down as binary `ContractWrapper` frames, in order, to every consumer of
 /// their route. A JSON ping every 15 seconds keeps the connection open. After a drop it reconnects,
 /// waiting 1 second and doubling up to 60 seconds between attempts, and subscribes again to every
 /// route still consumed.
@@ -121,6 +122,9 @@ actor StreamConnection {
         var channel: String
         /// What an `rs.error` reply means for this request.
         var rejection: MexcFutures.ClientError.Reason
+        /// The topic a subscribe request is for, by route and identity, which the acknowledgement
+        /// marks subscribed as it arrives; `nil` for the login.
+        var topic: (route: StreamSubscription.Route, id: UUID)?
         var continuation: CheckedContinuation<Void, any Error>?
         var outcome: Result<Void, any Error>?
     }
@@ -282,7 +286,7 @@ actor StreamConnection {
         do {
             try await send(
                 subscription.subscribeRequest, acknowledgedOn: subscription.acknowledgementChannel,
-                naming: subscription.name, rejection: .subscriptionRejected, over: link
+                naming: subscription.name, rejection: .subscriptionRejected, for: (route, topic.id), over: link
             )
             outcome = .success(())
         } catch is ConnectionLost {
@@ -311,11 +315,18 @@ actor StreamConnection {
                 // any, sends its own request.
                 unsubscribes.append(subscription)
             }
-        case .failure(let error):
-            if isConnected, (error as? MexcFutures.ClientError)?.reason == .acknowledgementTimedOut {
-                // MEXC may still have subscribed.
-                unsubscribes.append(subscription)
+        case .failure(let error) where (error as? MexcFutures.ClientError)?.reason == .acknowledgementTimedOut:
+            // A late acknowledgement or error from MEXC would be taken for the next request's, as
+            // neither names its market, so the connection starts over and subscribes again to every
+            // route still consumed. A route MEXC had acknowledged before is among them.
+            if isCurrent, topics[route]?.wasSubscribed == false {
+                fail(route, with: error)
             }
+            if isConnected {
+                await link.session.close()
+                closed(link.id)
+            }
+        case .failure(let error):
             if isCurrent {
                 fail(route, with: error)
             }
@@ -324,14 +335,15 @@ actor StreamConnection {
 
     /// Sends `request` and waits for MEXC to acknowledge it on `channel`, or throws when MEXC
     /// reports an error (`rejection`), the time runs out or the connection drops. `name` says what
-    /// the request is for, in a timeout's message.
+    /// the request is for, in a timeout's message; `topic` is the topic a subscribe request is for.
     private func send(
         _ request: String, acknowledgedOn channel: String, naming name: String,
-        rejection: MexcFutures.ClientError.Reason, over link: Link
+        rejection: MexcFutures.ClientError.Reason, for topic: (route: StreamSubscription.Route, id: UUID)? = nil,
+        over link: Link
     ) async throws {
         let id = UUID()
         // Expected before sending, so an acknowledgement that arrives at once isn't missed.
-        acknowledgement = PendingAcknowledgement(id: id, channel: channel, rejection: rejection)
+        acknowledgement = PendingAcknowledgement(id: id, channel: channel, rejection: rejection, topic: topic)
         defer {
             if acknowledgement?.id == id { acknowledgement = nil }
         }
@@ -473,15 +485,29 @@ actor StreamConnection {
         switch frame {
         case .text(let text):
             guard let control = try? JSONDecoder().decode(ControlFrame.self, from: Data(text.utf8)) else { return }
-            if control.channel == "rs.error", let rejection = acknowledgement?.rejection {
-                resolveAcknowledgement(with: .failure(MexcFutures.ClientError(rejection, message: control.message)))
-            } else if control.channel == acknowledgement?.channel {
+            guard let pending = acknowledgement else { return }
+            if control.channel == "rs.error" {
+                resolveAcknowledgement(with: .failure(MexcFutures.ClientError(pending.rejection, message: control.message)))
+            } else if control.channel == pending.channel {
+                // An acknowledgement says "success"; anything else on its channel is a refusal.
+                if let message = control.message, message != "success" {
+                    resolveAcknowledgement(with: .failure(MexcFutures.ClientError(pending.rejection, message: message)))
+                    return
+                }
+                // Pushes that follow are this subscription's, so it counts as subscribed from here,
+                // before the request's own task resumes.
+                if let topic = pending.topic, topics[topic.route]?.id == topic.id {
+                    topics[topic.route]?.state = .subscribed
+                }
                 resolveAcknowledgement(with: .success(()))
             }
         case .binary(let bytes):
-            // A frame that doesn't decode is dropped, as is one of a channel no stream consumes.
+            // A frame that doesn't decode is dropped, as is one of a channel no stream consumes. On
+            // the market connection, so is one of a route MEXC hasn't acknowledged yet: until it
+            // does, pushes on the route can still be those of the parameters it unsubscribed.
             guard let wrapper = try? ContractWrapper(serializedBytes: bytes),
-                let topic = topics[wrapper.route]
+                let topic = topics[wrapper.route],
+                account != nil || topic.state == .subscribed
             else { return }
             for consumer in topic.consumers.values {
                 consumer.receive(wrapper)

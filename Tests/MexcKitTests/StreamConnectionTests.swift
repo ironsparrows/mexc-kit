@@ -130,18 +130,46 @@ struct StreamConnectionTests {
         #expect(error.message == "Contract [NOPE_USDT] not exists")
     }
 
-    @Test func `an unacknowledged subscription throws acknowledgementTimedOut and is unsubscribed`() async throws {
+    @Test func `an unacknowledged subscription throws acknowledgementTimedOut, and the connection starts over`() async throws {
         let streams = StreamEndpoints.test(server)
-        let ticker = streams.ticker("BTC_USDT")
+        let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         try await acknowledge(1)
         let prices = Task { try await Self.take(1, from: streams.indexPrice("BTC_USDT")) }
 
         let error = try await #require(throws: MexcFutures.ClientError.self) { try await prices.value }
         #expect(error.reason == .acknowledgementTimedOut)
         #expect(error.message == "BTC_USDT index prices")
+        #expect(await server.nextSent() == Self.indexPrice.subscribeRequest)
+        // The ticker MEXC had acknowledged subscribes again on a new connection, and goes on.
+        #expect(await server.nextSent() == Self.ticker.subscribeRequest)
+        await server.acknowledge("ticker")
+        try await server.push("push.ticker.BTC_USDT")
+        #expect(try await tickers.value.count == 1)
+        #expect(await server.connectionCount == 2)
+    }
+
+    @Test func `an acknowledgement that isn't success rejects the subscription`() async throws {
+        let streams = StreamEndpoints.test(server)
+        let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         _ = await server.nextSent()
-        #expect(await server.nextSent() == Self.indexPrice.unsubscribeRequest)
-        withExtendedLifetime(ticker) {}
+        await server.send(#"{"channel":"rs.sub.ticker","data":"failed","ts":1}"#)
+
+        let error = try await #require(throws: MexcFutures.ClientError.self) { try await tickers.value }
+        #expect(error.reason == .subscriptionRejected)
+        #expect(error.message == "failed")
+    }
+
+    @Test func `pushes before MEXC acknowledges a subscription are dropped`() async throws {
+        // Such as those of the parameters a route unsubscribed just before.
+        let connection = makeConnection()
+        let recorder = Recorder()
+        await connection.subscribe(Self.ticker, id: recorder.id, consumer: recorder.consumer)
+        _ = await server.nextSent()
+        await server.send(.binary(try Self.tickerPush(time: 1)))
+        await server.acknowledge("ticker")
+        await server.send(.binary(try Self.tickerPush(time: 2)))
+
+        #expect(await recorder.nextPush()?.ts == 2)
     }
 
     @Test func `order books grouped by another step on an open market throw invalidRequest naming both`() async throws {
@@ -295,6 +323,15 @@ struct StreamConnectionTests {
     }
 
     // MARK: Helpers
+
+    private static func tickerPush(time: Int64) throws -> Data {
+        try ContractWrapper.with {
+            $0.channel = "push.ticker"
+            $0.symbol = "BTC_USDT"
+            $0.ts = time
+            $0.tickerDetail = TickerDetail.with { $0.symbol = "BTC_USDT" }
+        }.serializedBytes()
+    }
 
     private func makeConnection() -> StreamConnection {
         StreamConnection(url: URL(string: "wss://contract.mexc.com/edge")!, transport: server, timing: .test)

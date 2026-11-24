@@ -51,6 +51,10 @@ struct StreamEndpoints: MexcFutures.StreamAPI {
 
     func orderBooks(_ symbol: MexcFutures.Symbol, limit: Int) -> AsyncThrowingStream<MexcFutures.OrderBook, any Error> {
         // `depth.full` works and is used by MEXC's official Go client, but isn't on the documentation's pages.
+        guard [5, 10, 20].contains(limit) else {
+            let error = MexcFutures.ClientError(.invalidRequest, message: "An order book's limit is 5, 10 or 20, not \(limit)")
+            return AsyncThrowingStream { $0.finish(throwing: error) }
+        }
         let subscription = StreamSubscription(
             name: "\(symbol) order books of \(limit) levels", channel: "depth.full", symbol: symbol,
             parameters: ["limit": .int(limit)]
@@ -163,7 +167,7 @@ extension MexcFutures.Ticker {
             dayChangeRate: try .stream(ticker.riseFallRate, "riseFallRate"),
             maximumBidPrice: try .stream(ticker.maxBidPrice, "maxBidPrice"),
             minimumAskPrice: try .stream(ticker.minAskPrice, "minAskPrice"),
-            time: Date(milliseconds: ticker.timestamp)
+            time: try .stream(ticker.timestamp, "timestamp")
         )
     }
 }
@@ -182,7 +186,7 @@ extension MexcFutures.TickerSummary {
             dayChangeRate: try .stream(ticker.riseFallRate, "riseFallRate"),
             maximumBidPrice: try .stream(ticker.maxBidPrice, "maxBidPrice"),
             minimumAskPrice: try .stream(ticker.minAskPrice, "minAskPrice"),
-            time: Date(milliseconds: ticker.timestamp)
+            time: try .stream(ticker.timestamp, "timestamp")
         )
     }
 }
@@ -203,7 +207,7 @@ extension MexcFutures.Deal {
             // MEXC's deal page: 1 is a self-trade, 2 isn't.
             isSelfTrade: deal.m == 1,
             // `ts` is the trade time; `cts` is the matching engine's, sent when `ts` isn't.
-            time: Date(milliseconds: deal.hasTs ? deal.ts : deal.cts)
+            time: try .stream(deal.hasTs ? deal.ts : deal.cts, "ts")
         )
     }
 }
