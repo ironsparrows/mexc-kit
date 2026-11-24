@@ -134,6 +134,22 @@ struct OrderBookSyncTests {
         #expect(await script.recentChangesReads == 1)
     }
 
+    @Test func `a failed catch-up is tried again on a later change`() async throws {
+        await script.snapshots([Self.book(version: 10)])
+        await script.failNextRecentChanges()
+        await script.recentChanges([[Self.change(11), Self.change(12)]])
+        var books = sync().makeAsyncIterator()
+        _ = try await books.next()
+
+        pushes.yield(Self.change(12))
+        pushes.yield(Self.change(13))
+        var book = try #require(try await books.next())
+        while book.version < 13 {
+            book = try #require(try await books.next())
+        }
+        #expect(await script.recentChangesReads == 2)
+    }
+
     // MARK: Ending
 
     @Test func `a failing snapshot ends the sequence with its error`() async throws {
@@ -255,9 +271,12 @@ struct OrderBookSyncTests {
         private var recentChangesQueue: [[MexcFutures.OrderBook.Change]] = []
         private(set) var snapshotReads = 0
         private(set) var recentChangesReads = 0
+        private var failsNextRecentChanges = false
 
         func snapshots(_ books: [MexcFutures.OrderBook]) { snapshotQueue = books }
         func recentChanges(_ lists: [[MexcFutures.OrderBook.Change]]) { recentChangesQueue = lists }
+        /// Makes the next read of the recent changes fail, as when MEXC rate-limits it.
+        func failNextRecentChanges() { failsNextRecentChanges = true }
 
         func nextSnapshot() throws -> MexcFutures.OrderBook {
             snapshotReads += 1
@@ -267,6 +286,10 @@ struct OrderBookSyncTests {
 
         func nextRecentChanges() throws -> [MexcFutures.OrderBook.Change] {
             recentChangesReads += 1
+            if failsNextRecentChanges {
+                failsNextRecentChanges = false
+                throw MexcError(code: .tooFrequent)
+            }
             guard !recentChangesQueue.isEmpty else { throw MexcError(code: .busy, message: "No changes scripted") }
             return recentChangesQueue.removeFirst()
         }

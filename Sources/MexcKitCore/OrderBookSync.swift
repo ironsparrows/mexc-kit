@@ -14,12 +14,15 @@ extension MexcFutures {
     /// levels a side, and applies the changes that follow it by version, as MEXC's documentation
     /// describes. Deeper levels appear once a change touches them. When a version is missing, such as
     /// after a reconnect, it catches up from the last 1,000 changes, or from a new snapshot when those
-    /// don't reach back far enough. While MEXC's REST data lags behind the stream it tries again,
-    /// at most every half second, which keeps it well within MEXC's rate limits for both requests.
+    /// don't reach back far enough. While MEXC's REST data lags behind the stream it tries again on a
+    /// later change, at most every half second, which keeps one book well within MEXC's rate limits
+    /// for both requests. A catch-up that fails, such as one MEXC rate-limits after a reconnect, is
+    /// tried again on a later change too, waiting twice as long after each failure, up to about half a
+    /// minute.
     ///
     /// Elements come only while no version is missing; a consumer that falls behind gets the latest
-    /// book only. The sequence ends with the error a request or the stream throws, and ends when the
-    /// stream does. Each iteration keeps a book of its own.
+    /// book only. The sequence ends with the error the first snapshot or the stream throws, and ends
+    /// when the stream does. Each iteration keeps a book of its own.
     public struct OrderBookSync: AsyncSequence, Sendable {
         public typealias Element = OrderBook
 
@@ -90,12 +93,19 @@ extension MexcFutures {
             publish(book.orderBook)
             let clock = ContinuousClock()
             var nextCatchUp = clock.now
+            var failedCatchUps = 0
             for try await change in changes {
                 let version = book.version
                 book.apply(change)
                 if !book.isSynchronized, clock.now >= nextCatchUp {
-                    try await catchUp(&book)
-                    nextCatchUp = clock.now + catchUpInterval
+                    do {
+                        try await catchUp(&book)
+                        failedCatchUps = 0
+                    } catch {
+                        if Task.isCancelled { throw error }
+                        failedCatchUps += 1
+                    }
+                    nextCatchUp = clock.now + catchUpInterval * (1 << Swift.min(failedCatchUps, 6))
                 }
                 if book.isSynchronized, book.version != version {
                     publish(book.orderBook)
@@ -130,8 +140,16 @@ extension MexcFutures.OrderBookSync {
     public struct Iterator: AsyncIteratorProtocol {
         fileprivate var books: AsyncThrowingStream<MexcFutures.OrderBook, any Error>.Iterator
 
-        // `@concurrent`, as the stream's own `next()`: the books are waited for off the caller's
-        // isolation.
+        /// The next book, waited for on the caller's isolation.
+        @available(macOS 15, iOS 18, tvOS 18, visionOS 2, *)
+        public mutating func next(
+            isolation actor: isolated (any Actor)? = #isolation
+        ) async throws(any Error) -> MexcFutures.OrderBook? {
+            try await books.next(isolation: actor)
+        }
+
+        /// The next book. Before the OS versions with `next(isolation:)`, it is waited for off the
+        /// caller's isolation, as the underlying stream's own `next()` is.
         @concurrent public mutating func next() async throws -> MexcFutures.OrderBook? {
             try await books.next()
         }
