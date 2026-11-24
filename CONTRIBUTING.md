@@ -6,7 +6,7 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) first: it lists the targets, the access 
 
 Swift 6.4 or later. On macOS, Xcode 27.2 or later for the iOS build.
 
-Supported platforms: macOS 13, iOS 16, tvOS 16, visionOS 1 and Linux. watchOS is not supported.
+Supported platforms: macOS 13, iOS 16, tvOS 16 and visionOS 1. Linux is a target platform, not yet built or tested. watchOS is not supported.
 
 ## Checks before a change lands
 
@@ -54,7 +54,7 @@ Linux is a supported platform but has no local check yet. `swift build` and `swi
 
 Live tests run when an API key and its secret are set; otherwise they skip. There is no other switch: with keys set, every live suite runs, including those that place real orders, in a plain `swift test` and in Xcode's Test action too. `swift test --skip Live` leaves them out.
 
-**Three suites place small real orders and open real positions** on that account, with real fees, in BTC_USDT at the contract's minimum volume and 5× isolated leverage. They close and cancel what they open, but they also close whatever BTC_USDT long they find and cancel every pending BTC_USDT order, so use an account with no BTC_USDT orders or positions of its own. A failure partway can leave an order or a position open, the BTC_USDT long at 5× isolated leverage, or the ETH_USDT short leverage changed: check the account after a failed run.
+**Three suites place small real orders and open real positions** on that account, with real fees, in BTC_USDT at the contract's minimum volume and 5× isolated leverage. They close and cancel what they open, but they close the minimum volume of the first BTC_USDT long they find, which can be one of your own, and one cancels every pending BTC_USDT order, so use an account with no BTC_USDT orders or positions of its own. They run one at a time. A failure partway can leave an order or a position open, the BTC_USDT long at 5× isolated leverage, or the ETH_USDT short leverage changed: check the account after a failed run.
 
 | Suite | What it does |
 |---|---|
@@ -70,8 +70,10 @@ Live tests run when an API key and its secret are set; otherwise they skip. Ther
 Set them in the environment, reading them without echo so they stay out of your shell history:
 
 ```bash
-read -rs "MEXC_API_KEY?API key: " && read -rs "MEXC_API_SECRET?Secret: " && export MEXC_API_KEY MEXC_API_SECRET
+printf 'API key: ' && read -rs MEXC_API_KEY && echo && printf 'Secret: ' && read -rs MEXC_API_SECRET && echo && export MEXC_API_KEY MEXC_API_SECRET
 ```
+
+Never put keys in an Xcode scheme's environment variables: a shared scheme is a file that can be committed.
 
 ```bash
 swift test --filter Live

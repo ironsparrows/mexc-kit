@@ -43,7 +43,7 @@ Import `Foundation` with a plain `import Foundation`, not `FoundationEssentials`
 - In `MexcKitCore` and `MexcKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
 - A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them. A type split across files for size keeps its main file and names each other `Type+Part.swift`, such as `StreamEndpoints+Account.swift`.
 - `MexcKitProtobuf` is upstream code: `Proto/` holds MEXC's files unmodified and `Generated/` holds generated Swift, never edited by hand. The folder, file, mark, comment, access and vocabulary rules here don't apply to either.
-- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitProtobufTests` for decoding binary frames (recorded from MEXC, except one built to carry an unknown push type), `MexcKitTests` for the client. `MexcKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, `Support/` holds fakes and helpers, and `Fixtures/` holds responses recorded from MEXC, byte for byte except for replaced IDs. Private endpoints' fixtures are the examples in MEXC's documentation until a response is recorded with a key; their test suites say so.
+- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitProtobufTests` for decoding binary frames (recorded from MEXC, except one built to carry an unknown push type), `MexcKitTests` for the client. `MexcKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, `Support/` holds fakes and helpers, and `Fixtures/` holds responses recorded from MEXC, byte for byte except for replaced IDs; its `Stream/` frames are copies of `MexcKitProtobufTests`' fixtures, since resources don't cross test targets, so change both together. Private endpoints' fixtures are the examples in MEXC's documentation until a response is recorded with a key; their test suites say so.
 - `MexcKit.docc` holds the documentation's landing page and articles; `MexcKitCore.docc` holds the landing page of `MexcKitCore` alone. The code of their examples and the README's lives in `Tests/MexcKitTests/DocumentationExamples.swift`, compiled but never run; `DocumentationExampleTests` checks each example matches it.
 
 Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out:
@@ -51,7 +51,7 @@ Files of one kind use the same `// MARK: -` sections in the same order; a sectio
 | Kind | Sections |
 |---|---|
 | A domain protocol | Protocol · Defaults · Requests |
-| A model | Model · Reading · Wire |
+| A model | Model · Reading · Wire, with each nested type in Model or in a section of its own before Wire |
 | A request value | Model · one section per nested type |
 | A domain conformer | Endpoints · Wire |
 | The stream connection | Connection · Subscribing · Logging in · Receiving · Recovering · Wire |
@@ -75,7 +75,7 @@ One word per concept in code, comments and docs.
 | volume | size in contracts | `vol` |
 | contract | a futures market: its symbol and trading rules | "contract", "contract detail" |
 | balance | the futures account's holdings of one asset | "assets", "asset" |
-| amount | a traded value, as opposed to a volume in contracts; MEXC doesn't document its unit | `dealAmount`, `tieredDealAmount` |
+| amount | a quantity of an asset, such as a transfer or a traded value, as opposed to a volume in contracts | `amount`, `dealAmount`, `tieredDealAmount` |
 | margin change | margin added to or removed from a position | `change_margin` `amount` with `ADD`/`SUB` |
 | sub-account | an account under a master account, named by MEXC's sub-account name | `subAccount` |
 | self-trade prevention group | a named list of sub-accounts | "STP group", `blacklist`, `configName` |

@@ -5,8 +5,8 @@ public import Foundation
 extension MexcFutures {
     /// A transfer of an asset into or out of the futures account.
     ///
-    /// The optional properties are in MEXC's documentation but not yet in a recorded response; `nil`
-    /// means the response didn't include the field.
+    /// MEXC documents the optional properties but doesn't always send them; `nil` means the response
+    /// didn't include the field.
     public struct Transfer: Hashable, Sendable {
         /// MEXC's ID for the transfer.
         public let id: String

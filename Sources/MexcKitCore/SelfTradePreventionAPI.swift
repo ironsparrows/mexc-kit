@@ -10,8 +10,8 @@ extension MexcFutures {
         /// The groups, or only the one with this name.
         func groups(_ name: String?) async throws -> [SelfTradePreventionGroup]
 
-        /// The group the account belongs to; `nil` when MEXC reports none. MEXC's documentation shows
-        /// no data for this request, so what it sends is unverified.
+        /// The group the account belongs to; `nil` when MEXC reports none. MEXC documents no response
+        /// for this request; it's read as one group, as in ``groups(_:)``.
         func currentGroup() async throws -> SelfTradePreventionGroup?
 
         /// Creates a group of at least two sub-accounts, by their numeric UIDs.

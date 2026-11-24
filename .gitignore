@@ -9,4 +9,8 @@ DerivedData/
 /Package.resolved
 
 # Live test API key and secret for Xcode runs. Only you create this file; see CONTRIBUTING.md.
-/Tests/MexcKitTestSupport/LocalLiveTestSettings.swift
+# Ignored wherever it lands, as are environment files and shared Xcode schemes, whose environment
+# variables could hold keys.
+LocalLiveTestSettings.swift
+.env*
+.swiftpm/xcode/xcshareddata/

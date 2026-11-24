@@ -5,8 +5,8 @@ public import Foundation
 extension MexcFutures {
     /// The futures account's holdings of one asset.
     ///
-    /// The optional properties are in MEXC's documentation but not yet in a recorded response; `nil`
-    /// means the response didn't include the field.
+    /// MEXC documents the optional properties but doesn't always send them; `nil` means the response
+    /// didn't include the field.
     public struct Balance: Hashable, Sendable {
         /// The asset, such as `"USDT"`.
         public let asset: String

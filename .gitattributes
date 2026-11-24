@@ -1,5 +1,7 @@
 # Recorded binary frames: never convert line endings.
 *.bin binary
+# Recorded JSON responses stay byte for byte as MEXC sent them.
+/Tests/**/Fixtures/** -text
 # MEXC's .proto files stay byte for byte as upstream ships them.
 /Sources/MexcKitProtobuf/Proto/** -text
 /Sources/MexcKitProtobuf/Generated/** linguist-generated

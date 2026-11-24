@@ -5,9 +5,8 @@ public import Foundation
 extension MexcFutures {
     /// A position in one market: open, or closed in the position history.
     ///
-    /// Volumes are in contracts. The optional properties are in MEXC's documentation but not yet in a
-    /// recorded response, or MEXC documents them as sometimes missing; `nil` means the response didn't
-    /// include the field.
+    /// Volumes are in contracts. MEXC documents the optional properties but doesn't always send them;
+    /// `nil` means the response didn't include the field.
     public struct Position: Hashable, Sendable {
         public let id: PositionID
         public let symbol: Symbol

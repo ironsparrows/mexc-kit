@@ -6,7 +6,7 @@ extension MexcFutures {
     ///
     /// ```swift
     /// for try await book in MexcFutures.OrderBookSync("BTC_USDT", client: client) {
-    ///     print(book.bids.first?.price, book.asks.first?.price)
+    ///     print(book.bids.first?.price ?? 0, book.asks.first?.price ?? 0)
     /// }
     /// ```
     ///

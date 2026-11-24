@@ -93,8 +93,9 @@ extension MexcFutures.Client {
         /// only.
         public var streamURL: URL
         /// How long after its `Request-Time` MEXC still accepts a private request, sent in the
-        /// `Recv-Window` header in whole milliseconds. `nil` sends no header, and MEXC allows 10
-        /// seconds. MEXC accepts at most 60 seconds; the client sends the value as it is.
+        /// `Recv-Window` header in whole milliseconds, as MEXC's official clients send it; MEXC's
+        /// documentation doesn't name the unit. `nil` sends no header, and MEXC allows 10 seconds. MEXC
+        /// accepts at most 60 seconds; the client sends the value as it is.
         public var receiveWindow: Duration?
         /// The value of the `Language` header, which selects the language of MEXC's messages. `nil`
         /// sends no header.

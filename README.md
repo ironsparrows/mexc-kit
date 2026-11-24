@@ -15,12 +15,12 @@ amounts.
 ## Requirements
 
 Swift 6.4 or later (Xcode 27.2 or later on Apple platforms). macOS 13, iOS 16, tvOS 16 and
-visionOS 1. Linux is intended but not yet built or tested. watchOS is not supported.
+visionOS 1. Linux is a target platform, not yet built or tested. watchOS is not supported.
 
 ## Installation
 
 MexcKit isn't published yet. Until it is, add it to your package from a local checkout, then add
-the `MexcKit` product to your target:
+the `MexcKit` product to your target. The `package:` value is the checkout's folder name:
 
 ```swift
 .package(path: "../MexcKit"),
