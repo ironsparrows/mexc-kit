@@ -12,48 +12,40 @@ import Testing
 @Suite("Account streams", .timeLimit(.minutes(1)))
 struct AccountStreamTests {
     private let server = FakeWebSocketServer()
-    private static let account = StreamConnection.Account(
-        credentials: { MexcCredentials(apiKey: "mx0testkey", secret: "testsecret") },
-        clock: ServerClock(localNow: { Date(timeIntervalSince1970: 1_700_000_000) })
-    )
-    /// The login for the account above: the signature is HMAC-SHA256 over the API key and the request
-    /// time, as REST signs a request without parameters.
-    private static let login = #"{"method":"login","param":{"apiKey":"mx0testkey","reqTime":"1700000000000","#
-        + #""signature":"714a5b3c4e04c2cb808c224fe8f77bbbec89c8014d52eee3d9b064004ca0e9f9"},"subscribe":false}"#
 
     // MARK: Login and filter
 
     @Test func `the first account stream logs in, then filters to its channel and markets`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
         let orders = streams.orders(["BTC_USDT"])
 
-        #expect(await server.nextSent() == Self.login)
+        #expect(await server.nextSent() == AccountStreamSupport.login)
         await server.send(#"{"channel":"rs.login","data":"success","ts":1}"#)
-        #expect(await server.nextSent() == Self.filter(#"{"filter":"order","rules":["BTC_USDT"]}"#))
+        #expect(await server.nextSent() == AccountStreamSupport.filter(#"{"filter":"order","rules":["BTC_USDT"]}"#))
         withExtendedLifetime(orders) {}
     }
 
     @Test func `the filter names every stream's markets, and every market when a stream wants all`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
         let bitcoin = streams.orders(["BTC_USDT"])
         try await logIn()
         _ = await server.nextSent()
 
         let ether = streams.orders(["ETH_USDT"])
-        #expect(await server.nextSent() == Self.filter(#"{"filter":"order","rules":["BTC_USDT","ETH_USDT"]}"#))
+        #expect(await server.nextSent() == AccountStreamSupport.filter(#"{"filter":"order","rules":["BTC_USDT","ETH_USDT"]}"#))
         let positions = streams.positions()
-        #expect(await server.nextSent() == Self.filter(
+        #expect(await server.nextSent() == AccountStreamSupport.filter(
             #"{"filter":"order","rules":["BTC_USDT","ETH_USDT"]},{"filter":"position"}"#
         ))
         let balances = streams.balances()
-        #expect(await server.nextSent() == Self.filter(
+        #expect(await server.nextSent() == AccountStreamSupport.filter(
             #"{"filter":"asset"},{"filter":"order","rules":["BTC_USDT","ETH_USDT"]},{"filter":"position"}"#
         ))
         withExtendedLifetime((bitcoin, ether, positions, balances)) {}
     }
 
     @Test func `the filter shrinks when a stream ends, and the connection closes after the last`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
         var closes = server.closes.makeAsyncIterator()
         var bitcoin: AsyncThrowingStream<MexcFutures.Order, any Error>? = streams.orders(["BTC_USDT"])
         try await logIn()
@@ -62,7 +54,7 @@ struct AccountStreamTests {
         _ = await server.nextSent()
 
         bitcoin = nil
-        #expect(await server.nextSent() == Self.filter(#"{"filter":"order","rules":["ETH_USDT"]}"#))
+        #expect(await server.nextSent() == AccountStreamSupport.filter(#"{"filter":"order","rules":["ETH_USDT"]}"#))
         ether = nil
         await closes.next()
         // An empty filter would turn every private channel back on, so none is sent.
@@ -71,14 +63,14 @@ struct AccountStreamTests {
     }
 
     @Test func `one stream wanting every market leaves the key's markets out, and fills filter on order.deal`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
         let bitcoin = streams.orders(["BTC_USDT"])
         let every = streams.orders()
         let fills = streams.fills(["ETH_USDT"])
         try await logIn()
 
         // The streams may join before or after the first filter, so the last of up to three counts.
-        let expected = Self.filter(#"{"filter":"order"},{"filter":"order.deal","rules":["ETH_USDT"]}"#)
+        let expected = AccountStreamSupport.filter(#"{"filter":"order"},{"filter":"order.deal","rules":["ETH_USDT"]}"#)
         var filter = await server.nextSent()
         for _ in 0..<2 where filter != expected {
             filter = await server.nextSent()
@@ -87,8 +79,47 @@ struct AccountStreamTests {
         withExtendedLifetime((bitcoin, every, fills)) {}
     }
 
+    @Test func `a stream of a channel without a filter key turns every channel on until it ends`() async throws {
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let orders = streams.orders(["BTC_USDT"])
+        try await logIn()
+        #expect(await server.nextSent() == AccountStreamSupport.filter(#"{"filter":"order","rules":["BTC_USDT"]}"#))
+
+        var trailing: AsyncThrowingStream<MexcFutures.TrailingOrder, any Error>? = streams.trailingOrders()
+        #expect(await server.nextSent() == AccountStreamSupport.filter(""))
+        trailing = nil
+        #expect(await server.nextSent() == AccountStreamSupport.filter(#"{"filter":"order","rules":["BTC_USDT"]}"#))
+        withExtendedLifetime((orders, trailing)) {}
+    }
+
+    @Test func `a stream that joins while the filter is empty survives a reconnect that first fails`() async throws {
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let trailing = streams.trailingOrders()
+        try await logIn()
+        #expect(await server.nextSent() == AccountStreamSupport.filter(""))
+        let orders = Task { try await AccountStreamSupport.take(1, from: streams.orders()) }
+        // Joining changes nothing MEXC is told, so nothing is sent; give the stream time to join.
+        try await Task.sleep(for: .milliseconds(100))
+
+        await server.failConnections(1)
+        await server.drop()
+        try await logIn()
+        #expect(await server.nextSent() == AccountStreamSupport.filter(""))
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.order", .orderChange(Self.order))))
+        #expect(try await orders.value.map(\.id.rawValue) == ["123456789"])
+        withExtendedLifetime(trailing) {}
+    }
+
+    @Test func `streams only of channels without a filter key send an empty filter`() async throws {
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let modes = streams.positionModes()
+        try await logIn()
+        #expect(await server.nextSent() == AccountStreamSupport.filter(""))
+        withExtendedLifetime(modes) {}
+    }
+
     @Test func `an account stream started after the last one ended logs in again`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
         var closes = server.closes.makeAsyncIterator()
         var first: AsyncThrowingStream<MexcFutures.Order, any Error>? = streams.orders()
         try await logIn()
@@ -98,14 +129,14 @@ struct AccountStreamTests {
 
         let second = streams.orders()
         try await logIn()
-        #expect(await server.nextSent() == Self.filter(#"{"filter":"order"}"#))
+        #expect(await server.nextSent() == AccountStreamSupport.filter(#"{"filter":"order"}"#))
         withExtendedLifetime((first, second)) {}
     }
 
     @Test func `a login MEXC doesn't acknowledge fails the streams with acknowledgementTimedOut`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
-        let orders = Task { try await Self.take(1, from: streams.orders()) }
-        #expect(await server.nextSent() == Self.login)
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let orders = Task { try await AccountStreamSupport.take(1, from: streams.orders()) }
+        #expect(await server.nextSent() == AccountStreamSupport.login)
 
         let error = try await #require(throws: MexcFutures.ClientError.self) { try await orders.value }
         #expect(error.reason == .acknowledgementTimedOut)
@@ -113,36 +144,36 @@ struct AccountStreamTests {
     }
 
     @Test func `a login rejected after a reconnect ends the running account streams`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
-        let orders = Task { try await Self.take(1, from: streams.orders()) }
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let orders = Task { try await AccountStreamSupport.take(1, from: streams.orders()) }
         try await logIn()
         _ = await server.nextSent()
 
         await server.drop()
-        #expect(await server.nextSent() == Self.login)
+        #expect(await server.nextSent() == AccountStreamSupport.login)
         await server.send(#"{"channel":"rs.error","data":"Api key info invalid","ts":1}"#)
         let error = try await #require(throws: MexcFutures.ClientError.self) { try await orders.value }
         #expect(error.reason == .loginRejected)
     }
 
     @Test func `the account connection sends no unsubscribe, and market streams no login`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
         var positions: AsyncThrowingStream<MexcFutures.Position, any Error>? = streams.positions()
         let orders = streams.orders()
         try await logIn()
         _ = await server.nextSent()
         positions = nil
-        #expect(await server.nextSent() == Self.filter(#"{"filter":"order"}"#))
+        #expect(await server.nextSent() == AccountStreamSupport.filter(#"{"filter":"order"}"#))
 
         let otherServer = FakeWebSocketServer()
-        let ticker = StreamEndpoints.test(otherServer, account: Self.account).ticker("BTC_USDT")
+        let ticker = StreamEndpoints.test(otherServer, account: AccountStreamSupport.account).ticker("BTC_USDT")
         #expect(await otherServer.nextSent() == #"{"method":"sub.ticker","param":{"symbol":"BTC_USDT"}}"#)
         withExtendedLifetime((positions, orders, ticker)) {}
     }
 
     @Test func `a rejected login fails every account stream with loginRejected`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
-        let orders = Task { try await Self.take(1, from: streams.orders()) }
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let orders = Task { try await AccountStreamSupport.take(1, from: streams.orders()) }
         _ = await server.nextSent()
         await server.send(#"{"channel":"rs.error","data":"Api key info invalid","ts":1}"#)
 
@@ -153,7 +184,7 @@ struct AccountStreamTests {
 
     @Test func `account streams without credentials throw missingCredentials before connecting`() async throws {
         let streams = StreamEndpoints.test(server, account: StreamConnection.Account(credentials: nil, clock: ServerClock()))
-        let orders = Task { try await Self.take(1, from: streams.orders()) }
+        let orders = Task { try await AccountStreamSupport.take(1, from: streams.orders()) }
 
         let error = try await #require(throws: MexcFutures.ClientError.self) { try await orders.value }
         #expect(error.reason == .missingCredentials)
@@ -161,47 +192,47 @@ struct AccountStreamTests {
     }
 
     @Test func `after a drop the account connection logs in and filters again`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
-        let orders = Task { try await Self.take(1, from: streams.orders()) }
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let orders = Task { try await AccountStreamSupport.take(1, from: streams.orders()) }
         try await logIn()
         let filter = await server.nextSent()
 
         await server.drop()
-        #expect(await server.nextSent() == Self.login)
+        #expect(await server.nextSent() == AccountStreamSupport.login)
         await server.send(#"{"channel":"rs.login","data":"success","ts":1}"#)
         #expect(await server.nextSent() == filter)
-        await server.send(.binary(try Self.push("push.personal.order", .orderChange(Self.order))))
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.order", .orderChange(Self.order))))
         #expect(try await orders.value.map(\.id.rawValue) == ["123456789"])
     }
 
     // MARK: Markets
 
     @Test func `a push of a market a stream doesn't want can't end it, even when it doesn't decode`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
-        let bitcoin = Task { try await Self.take(1, from: streams.orders(["BTC_USDT"])) }
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let bitcoin = Task { try await AccountStreamSupport.take(1, from: streams.orders(["BTC_USDT"])) }
         try await logIn()
         _ = await server.nextSent()
 
         var broken = Self.order
         broken.symbol = "ETH_USDT"
         broken.clearCreateTime()
-        await server.send(.binary(try Self.push("push.personal.order", .orderChange(broken))))
-        await server.send(.binary(try Self.push("push.personal.order", .orderChange(Self.order))))
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.order", .orderChange(broken))))
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.order", .orderChange(Self.order))))
         #expect(try await bitcoin.value.map(\.symbol) == ["BTC_USDT"])
     }
 
     @Test func `each stream gets only its own markets' pushes`() async throws {
-        let streams = StreamEndpoints.test(server, account: Self.account)
-        let bitcoin = Task { try await Self.take(1, from: streams.orders(["BTC_USDT"])) }
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let bitcoin = Task { try await AccountStreamSupport.take(1, from: streams.orders(["BTC_USDT"])) }
         try await logIn()
         _ = await server.nextSent()
-        let ether = Task { try await Self.take(1, from: streams.orders(["ETH_USDT"])) }
+        let ether = Task { try await AccountStreamSupport.take(1, from: streams.orders(["ETH_USDT"])) }
         _ = await server.nextSent()
 
         var etherOrder = Self.order
         etherOrder.symbol = "ETH_USDT"
-        await server.send(.binary(try Self.push("push.personal.order", .orderChange(etherOrder))))
-        await server.send(.binary(try Self.push("push.personal.order", .orderChange(Self.order))))
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.order", .orderChange(etherOrder))))
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.order", .orderChange(Self.order))))
 
         #expect(try await ether.value.map(\.symbol) == ["ETH_USDT"])
         #expect(try await bitcoin.value.map(\.symbol) == ["BTC_USDT"])
@@ -210,7 +241,7 @@ struct AccountStreamTests {
     // MARK: Pushes
 
     @Test func `an order push decodes into an order without attached stops`() async throws {
-        let order = try await first(of: StreamEndpoints.test(server, account: Self.account).orders(), push: .orderChange(Self.order), on: "push.personal.order")
+        let order = try await first(of: StreamEndpoints.test(server, account: AccountStreamSupport.account).orders(), push: .orderChange(Self.order), on: "push.personal.order")
         #expect(order.id.rawValue == "123456789")
         #expect(order.symbol == "BTC_USDT")
         #expect(order.position?.rawValue == "987654321")
@@ -241,7 +272,7 @@ struct AccountStreamTests {
     }
 
     @Test func `a fill push decodes into a fill`() async throws {
-        let fill = try await first(of: StreamEndpoints.test(server, account: Self.account).fills(), push: .orderDealDetail(Self.fill), on: "push.personal.order.deal")
+        let fill = try await first(of: StreamEndpoints.test(server, account: AccountStreamSupport.account).fills(), push: .orderDealDetail(Self.fill), on: "push.personal.order.deal")
         #expect(fill.id.rawValue == "987654321")
         #expect(fill.symbol == "BTC_USDT")
         #expect(fill.orderID?.rawValue == "123456789")
@@ -258,7 +289,7 @@ struct AccountStreamTests {
     }
 
     @Test func `a position push decodes into a position`() async throws {
-        let position = try await first(of: StreamEndpoints.test(server, account: Self.account).positions(), push: .positionChange(Self.position), on: "push.personal.position")
+        let position = try await first(of: StreamEndpoints.test(server, account: AccountStreamSupport.account).positions(), push: .positionChange(Self.position), on: "push.personal.position")
         #expect(position.id.rawValue == "123456789")
         #expect(position.symbol == "BTC_USDT")
         #expect(position.side == .long)
@@ -288,7 +319,7 @@ struct AccountStreamTests {
     }
 
     @Test func `a balance push decodes its asset and amounts`() async throws {
-        let balance = try await first(of: StreamEndpoints.test(server, account: Self.account).balances(), push: .assetChange(Self.balance), on: "push.personal.asset")
+        let balance = try await first(of: StreamEndpoints.test(server, account: AccountStreamSupport.account).balances(), push: .assetChange(Self.balance), on: "push.personal.asset")
         #expect(balance == MexcFutures.BalanceUpdate(
             asset: "USDT", available: 9000, frozen: 1000, positionMargin: 5000, bonus: 100
         ))
@@ -300,7 +331,7 @@ struct AccountStreamTests {
         order.dealAvgPrice = "0"
         order.bboTypeNum = 2
         let decoded = try await first(
-            of: StreamEndpoints.test(server, account: Self.account).orders(), push: .orderChange(order), on: "push.personal.order"
+            of: StreamEndpoints.test(server, account: AccountStreamSupport.account).orders(), push: .orderChange(order), on: "push.personal.order"
         )
         #expect(decoded.position == nil)
         #expect(decoded.averageFillPrice == nil)
@@ -311,7 +342,7 @@ struct AccountStreamTests {
         var position = Self.position
         position.clearAutoAddIm()
         let decoded = try await first(
-            of: StreamEndpoints.test(server, account: Self.account).positions(), push: .positionChange(position),
+            of: StreamEndpoints.test(server, account: AccountStreamSupport.account).positions(), push: .positionChange(position),
             on: "push.personal.position"
         )
         #expect(!decoded.addsMarginAutomatically)
@@ -321,11 +352,11 @@ struct AccountStreamTests {
     func `an order push without a required value ends the stream with DecodingError`(missing: String) async throws {
         var order = Self.order
         if missing == "createTime" { order.clearCreateTime() } else { order.side = 0 }
-        let streams = StreamEndpoints.test(server, account: Self.account)
-        let orders = Task { try await Self.take(1, from: streams.orders()) }
+        let streams = StreamEndpoints.test(server, account: AccountStreamSupport.account)
+        let orders = Task { try await AccountStreamSupport.take(1, from: streams.orders()) }
         try await logIn()
         _ = await server.nextSent()
-        await server.send(.binary(try Self.push("push.personal.order", .orderChange(order))))
+        await server.send(.binary(try AccountStreamSupport.push("push.personal.order", .orderChange(order))))
 
         await #expect(throws: DecodingError.self) { try await orders.value }
     }
@@ -334,7 +365,7 @@ struct AccountStreamTests {
 
     /// Answers the login.
     private func logIn() async throws {
-        #expect(await server.nextSent() == Self.login)
+        #expect(await server.nextSent() == AccountStreamSupport.login)
         await server.send(#"{"channel":"rs.login","data":"success","ts":1}"#)
     }
 
@@ -344,33 +375,10 @@ struct AccountStreamTests {
     ) async throws -> Element {
         try await logIn()
         _ = await server.nextSent()
-        await server.send(.binary(try Self.push(channel, data)))
+        await server.send(.binary(try AccountStreamSupport.push(channel, data)))
         var values = stream.makeAsyncIterator()
         let value = try await values.next()
         return try #require(value)
-    }
-
-    private static func filter(_ filters: String) -> String {
-        #"{"method":"personal.filter","param":{"filters":["# + filters + "]}}"
-    }
-
-    private static func push(_ channel: String, _ data: ContractWrapper.OneOf_Data) throws -> Data {
-        try ContractWrapper.with {
-            $0.channel = channel
-            $0.ts = 1_760_942_212_000
-            $0.data = data
-        }.serializedBytes()
-    }
-
-    private static func take<Element>(
-        _ count: Int, from stream: AsyncThrowingStream<Element, any Error>
-    ) async throws -> [Element] {
-        var values: [Element] = []
-        for try await value in stream {
-            values.append(value)
-            if values.count == count { break }
-        }
-        return values
     }
 
     // The examples on MEXC's documentation pages, as Protobuf messages.

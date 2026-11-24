@@ -41,7 +41,7 @@ Import `Foundation` with a plain `import Foundation`, not `FoundationEssentials`
 ## Folders and files
 
 - In `MexcKitCore` and `MexcKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
-- A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them.
+- A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them. A type split across files for size keeps its main file and names each other `Type+Part.swift`, such as `StreamEndpoints+Account.swift`.
 - `MexcKitProtobuf` is upstream code: `Proto/` holds MEXC's files unmodified and `Generated/` holds generated Swift, never edited by hand. The folder, file, mark, comment, access and vocabulary rules here don't apply to either.
 - Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitProtobufTests` for decoding binary frames (recorded from MEXC, except one built to carry an unknown push type), `MexcKitTests` for the client. `MexcKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, `Support/` holds fakes and helpers, and `Fixtures/` holds responses recorded from MEXC, byte for byte except for replaced IDs. Private endpoints' fixtures are the examples in MEXC's documentation until a response is recorded with a key; their test suites say so.
 
@@ -82,5 +82,9 @@ One word per concept in code, comments and docs.
 | fee discount | a lower fee rate from MEXC's spot fee discount | `contractFeeDiscountConfig`, `joinDiscount`, `useFeeDiscount` |
 | fee deduction | a fee paid from MX, MXPOINT or a trial bonus | `feeDeductConfigs`, `deductType`, `useFeeDeduct` |
 | funding payment | the funding one position paid or received at a settlement | "funding records", `holdFee` |
+| liquidation risk | how close a position is to liquidation: its liquidation price, margin ratio and auto-deleveraging level | `liquidate.risk` |
+| liquidation notice | MEXC's notice that a position was liquidated, or a warning that it is close to it | `generic.notify`, "liquidation warning/notice" |
+| trial bonus | MEXC's trial funds credited to the futures account | "trial bonus", `bonus` |
+| leverage mode | MEXC's account setting with the values advanced and simple, which it doesn't describe | `leverageMode`, `lm` |
 | stream | values MEXC pushes over the WebSocket, such as tickers or deals | "channel", `sub.*`, `push.*` |
 | push | one frame of a stream's values, a binary `ContractWrapper` | `push.*` |

@@ -157,6 +157,15 @@ extension MexcFutures {
         public static let oneWay = Self(rawValue: 2)
     }
 
+    /// MEXC's leverage mode, which its documentation names without describing.
+    public struct LeverageMode: RawRepresentable, Hashable, Sendable, Codable {
+        public let rawValue: Int
+        public init(rawValue: Int) { self.rawValue = rawValue }
+
+        public static let advanced = Self(rawValue: 1)
+        public static let simple = Self(rawValue: 2)
+    }
+
     /// A position's lifecycle state.
     public struct PositionState: RawRepresentable, Hashable, Sendable, Codable {
         public let rawValue: Int

@@ -121,6 +121,65 @@ extension MexcFutures {
         /// The futures account's balances, each time one changes. Every change reaches a consumer
         /// that falls behind.
         func balances() -> AsyncThrowingStream<BalanceUpdate, any Error>
+
+        /// The account's plan orders on the given markets, or on every market for an empty set, each
+        /// time one changes.
+        ///
+        /// MEXC's push leaves out trigger protection, so it is `nil`. Every change reaches a consumer
+        /// that falls behind.
+        func planOrders(_ symbols: Set<Symbol>) -> AsyncThrowingStream<PlanOrder, any Error>
+
+        /// The account's stop orders on the given markets, or on every market for an empty set, each
+        /// time one changes.
+        ///
+        /// MEXC's push leaves out trigger protection, so it is `nil`, and doesn't say how a
+        /// take-profit closes, so its ``StopOrder/Exit/limitPrice`` is `nil` even when it closes with
+        /// a limit order; read the stop order through ``StopOrderAPI`` for them. Every change
+        /// reaches a consumer that falls behind.
+        func stopOrders(_ symbols: Set<Symbol>) -> AsyncThrowingStream<StopOrder, any Error>
+
+        /// The take-profit and stop-loss prices of the account's orders on the given markets, or on
+        /// every market for an empty set, each time they change. Every change reaches a consumer that
+        /// falls behind.
+        func attachedStops(_ symbols: Set<Symbol>) -> AsyncThrowingStream<AttachedStopsUpdate, any Error>
+
+        /// The account's trailing orders on the given markets, or on every market for an empty set,
+        /// each time one changes. Every change reaches a consumer that falls behind.
+        func trailingOrders(_ symbols: Set<Symbol>) -> AsyncThrowingStream<TrailingOrder, any Error>
+
+        /// The account's risk limit tiers on the given markets, or on every market for an empty set,
+        /// each time one changes.
+        ///
+        /// The tier's maximum leverage is as MEXC sends it; its `.proto` gives -1 as the value when
+        /// none is set. Every change reaches a consumer that falls behind.
+        func riskLimits(_ symbols: Set<Symbol>) -> AsyncThrowingStream<PositionRiskLimit, any Error>
+
+        /// How close the account's positions on the given markets, or on every market for an empty
+        /// set, are to liquidation, each time that changes. Every change reaches a consumer that
+        /// falls behind.
+        func liquidationRisks(_ symbols: Set<Symbol>) -> AsyncThrowingStream<LiquidationRisk, any Error>
+
+        /// MEXC's notices that one of the account's positions was liquidated or is close to it. Every
+        /// notice reaches a consumer that falls behind.
+        func liquidationNotices() -> AsyncThrowingStream<LiquidationNotice, any Error>
+
+        /// MEXC's reports that chasing one of the account's orders on the given markets, or on every
+        /// market for an empty set, failed. Every report reaches a consumer that falls behind.
+        func chaseFailures(_ symbols: Set<Symbol>) -> AsyncThrowingStream<ChaseFailure, any Error>
+
+        /// The account's position mode, each time it changes. Every change reaches a consumer that
+        /// falls behind.
+        func positionModes() -> AsyncThrowingStream<PositionMode, any Error>
+
+        /// The account's leverage mode, each time it changes.
+        ///
+        /// The mode is as MEXC sends it; its `.proto` gives -1 as the value when none is set. Every
+        /// change reaches a consumer that falls behind.
+        func leverageModes() -> AsyncThrowingStream<LeverageMode, any Error>
+
+        /// The account's trial bonus, each time it changes. Every change reaches a consumer that falls
+        /// behind.
+        func trialBonuses() -> AsyncThrowingStream<TrialBonusUpdate, any Error>
     }
 }
 
@@ -140,5 +199,41 @@ extension MexcFutures.StreamAPI {
     /// The account's positions on every market, each time one changes.
     public func positions() -> AsyncThrowingStream<MexcFutures.Position, any Error> {
         positions([])
+    }
+
+    /// The account's plan orders on every market, each time one changes.
+    public func planOrders() -> AsyncThrowingStream<MexcFutures.PlanOrder, any Error> {
+        planOrders([])
+    }
+
+    /// The account's stop orders on every market, each time one changes.
+    public func stopOrders() -> AsyncThrowingStream<MexcFutures.StopOrder, any Error> {
+        stopOrders([])
+    }
+
+    /// The take-profit and stop-loss prices of the account's orders on every market, each time they
+    /// change.
+    public func attachedStops() -> AsyncThrowingStream<MexcFutures.AttachedStopsUpdate, any Error> {
+        attachedStops([])
+    }
+
+    /// The account's trailing orders on every market, each time one changes.
+    public func trailingOrders() -> AsyncThrowingStream<MexcFutures.TrailingOrder, any Error> {
+        trailingOrders([])
+    }
+
+    /// The account's risk limit tiers on every market, each time one changes.
+    public func riskLimits() -> AsyncThrowingStream<MexcFutures.PositionRiskLimit, any Error> {
+        riskLimits([])
+    }
+
+    /// How close the account's positions on every market are to liquidation, each time that changes.
+    public func liquidationRisks() -> AsyncThrowingStream<MexcFutures.LiquidationRisk, any Error> {
+        liquidationRisks([])
+    }
+
+    /// MEXC's reports that chasing one of the account's orders on any market failed.
+    public func chaseFailures() -> AsyncThrowingStream<MexcFutures.ChaseFailure, any Error> {
+        chaseFailures([])
     }
 }

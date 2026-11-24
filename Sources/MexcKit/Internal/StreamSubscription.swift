@@ -1,7 +1,8 @@
 import Foundation
 
 /// One subscription to a channel of MEXC's WebSocket: the request that starts it and the route its
-/// pushes take. A private channel's subscription is its `personal.filter` key instead; the
+/// pushes take. A private channel has no subscribe request: the account connection's
+/// `personal.filter` covers it, by its key or, for a channel without one, by an empty filter. The
 /// subscribe and unsubscribe requests and the acknowledgement channel are for public channels.
 struct StreamSubscription: Hashable, Sendable {
     /// What the subscription streams, in the API's words, for error messages, such as
@@ -18,7 +19,8 @@ struct StreamSubscription: Hashable, Sendable {
     /// a candle interval. Pushes of the other channels carry nothing to tell them apart, so a
     /// market can have only one subscription to each.
     var variant: String?
-    /// The `personal.filter` key of a private channel, such as `order`; `nil` for a public channel.
+    /// The `personal.filter` key of a private channel, such as `order`; `nil` for a public channel
+    /// and for a private channel the filter doesn't name, such as `personal.track.order`.
     var filter: String?
 
     var route: Route { Route(channel: channel, symbol: symbol?.rawValue ?? "", variant: variant) }

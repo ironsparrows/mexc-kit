@@ -15,8 +15,9 @@ import SwiftProtobuf
 ///
 /// A private connection logs in first and then sends one `personal.filter` naming every private
 /// channel its streams consume and their markets, sent again whenever that changes; MEXC
-/// acknowledges the login but not the filter. It never sends an empty filter, which would turn every
-/// private channel back on: it closes instead.
+/// acknowledges the login but not the filter. While a stream consumes a private channel the filter
+/// has no key for, such as `personal.track.order`, the filter is empty instead, which MEXC documents
+/// as restoring its pushes. When the last stream ends, it closes rather than send a filter.
 actor StreamConnection {
     private let url: URL
     private let transport: any WebSocketTransport
@@ -156,12 +157,14 @@ actor StreamConnection {
                     await logIn(on: link)
                     continue
                 }
-                // With no filter key to send, MEXC is told nothing: an empty filter would turn every
-                // private channel back on.
-                if let filter = personalFilter, filter.text != sentFilter {
+                let filter = personalFilter
+                if filter.text != sentFilter {
                     await send(filter, on: link)
                     continue
                 }
+                // A stream that joins without changing the filter, such as any while it's empty, is
+                // covered by the filter already sent.
+                markSubscribed(filter.routes)
                 break
             }
             if let subscription = unsubscribes.first {
@@ -425,7 +428,12 @@ actor StreamConnection {
         }
         guard self.link?.id == link.id else { return }
         sentFilter = filter.text
-        for route in filter.routes where topics[route] != nil {
+        markSubscribed(filter.routes)
+    }
+
+    /// Counts the routes a filter sent on the current connection names as subscribed.
+    private func markSubscribed(_ routes: [StreamSubscription.Route]) {
+        for route in routes where topics[route] != nil {
             topics[route]?.state = .subscribed
             topics[route]?.wasSubscribed = true
         }
@@ -433,16 +441,20 @@ actor StreamConnection {
 
     /// The `personal.filter` request for the private routes consumed now, such as
     /// `{"method":"personal.filter","param":{"filters":[{"filter":"order","rules":["BTC_USDT"]}]}}`,
-    /// and those routes; `nil` when no route has a filter key. A filter names no markets when a
-    /// consumer wants every market.
-    private var personalFilter: (text: String, routes: [StreamSubscription.Route])? {
+    /// and the routes it covers. A filter names no markets when a consumer wants every market.
+    private var personalFilter: (text: String, routes: [StreamSubscription.Route]) {
+        // MEXC's documentation doesn't say whether a channel without a filter key is pushed while a
+        // filter is in place. It documents an empty filter as restoring its pushes, and Mexc.Net
+        // receives these channels after one (with a login that keeps MEXC's default pushes on).
+        if topics.values.contains(where: { $0.subscription.filter == nil }) {
+            return (PersonalFilter(filters: []).text, Array(topics.keys))
+        }
         let entries = topics.compactMap { route, topic -> (PersonalFilter.Entry, StreamSubscription.Route)? in
             guard let key = topic.subscription.filter else { return nil }
             let markets = topic.consumers.values.map(\.markets)
             let rules = markets.contains(where: \.isEmpty) ? nil : Set(markets.joined()).map(\.rawValue).sorted()
             return (PersonalFilter.Entry(filter: key, rules: rules), route)
         }
-        guard !entries.isEmpty else { return nil }
         let filters = entries.map(\.0).sorted { $0.filter < $1.filter }
         return (PersonalFilter(filters: filters).text, entries.map(\.1))
     }
