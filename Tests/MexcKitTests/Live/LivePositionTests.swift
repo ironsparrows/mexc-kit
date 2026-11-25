@@ -4,7 +4,7 @@ import MexcKitTestSupport
 import Testing
 
 // Places small real orders and changes the account's settings. The first test opens the smallest long in
-// BTC_USDC, adds margin and removes it, turns automatic margin on and off, changes the position's
+// BTC_USDC, adds margin and removes some of it, turns automatic margin on and off, changes the position's
 // leverage and sets it back, reverses the long into a short, and closes every position in every market.
 // Meanwhile the risk limit, liquidation risk, liquidation notice, leverage mode and trial bonus streams
 // stay open: they push only on events, and whatever arrives must decode. The second test switches the
@@ -45,7 +45,9 @@ extension MexcKitTests.LiveTrading {
             await #expect(throws: Never.self) {
                 let position = try #require(try await client.position.list(Self.btc).first { $0.side == .long })
                 try await client.position.adjustMargin(of: position.id, by: 1)
-                try await client.position.adjustMargin(of: position.id, by: -1)
+                // Less than was added: right after a market buy, the position's small unrealized loss lowers
+                // the margin MEXC lets it take back (code 2018). The rest returns when the position closes.
+                try await client.position.adjustMargin(of: position.id, by: Decimal(string: "-0.1")!)
                 try await client.position.setAddsMarginAutomatically(!position.addsMarginAutomatically, of: position.id)
                 try await client.position.setAddsMarginAutomatically(position.addsMarginAutomatically, of: position.id)
                 try await client.position.setLeverage(position.leverage == 5 ? 6 : 5, of: position.id)
