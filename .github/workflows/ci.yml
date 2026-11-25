@@ -1,0 +1,58 @@
+name: CI
+
+# Pull requests and main build and test on macOS and Linux only. The iOS, tvOS and visionOS builds and the
+# documentation build run before each release, in `release.yml`.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  macos:
+    name: Build and test on macOS
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      # Only the `xcode-27` image (a public preview) has Xcode 27.x; `/Applications/Xcode_27.2.app` is a link that
+      # stays when the release candidate becomes the release.
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+      - name: Format
+        # MEXC's `.proto` files and the code generated from them stay as they come.
+        run: swift format lint --strict -r Sources/MexcKit Sources/MexcKitCore Tests Package.swift
+      - name: Build
+        run: swift build --build-tests -Xswiftc -warnings-as-errors
+      - name: Test
+        # Without MEXC_API_KEY and MEXC_API_SECRET the live suites skip themselves, so this runs only the offline
+        # tests. No workflow sets them: the live suites place real orders, so they run only on a maintainer's machine.
+        run: swift test --skip-build
+
+  linux:
+    name: Build and test on Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container: swift:6.4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain
+        run: swift --version
+      - name: Build
+        run: swift build --build-tests -Xswiftc -warnings-as-errors
+      - name: Test
+        # The live suites skip themselves here too.
+        run: swift test --skip-build
