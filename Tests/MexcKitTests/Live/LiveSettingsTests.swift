@@ -43,7 +43,8 @@ extension MexcKitTests.LiveTrading {
         }
 
         // The groups' changes need a market maker account and its sub-accounts' UIDs; other accounts get
-        // noPermission (511), which is a known issue here.
+        // noPermission (511) for the create and the change, and, as no group was created, MEXC's 600
+        // "data does not exist" for the delete. Both are known issues here.
         @Test func `self-trade prevention groups are created, changed and deleted`() async throws {
             let name = "mexc-kit-live-test"
             try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
@@ -52,9 +53,11 @@ extension MexcKitTests.LiveTrading {
             try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
                 try await client.selfTradePrevention.update(name, members: ["1", "2", "3"])
             } matching: { Self.isNotMarketMaker($0) }
-            try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
+            try await withKnownIssue("The group wasn't created, so there is none to delete", isIntermittent: true) {
                 try await client.selfTradePrevention.delete(name)
-            } matching: { Self.isNotMarketMaker($0) }
+            } matching: { issue in
+                Self.isNotMarketMaker(issue) || (issue.error as? MexcError)?.code == .invalidParameter
+            }
         }
 
         // The sub-account reads need a master key and one of its sub-accounts; MEXC refuses a name that

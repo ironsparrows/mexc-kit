@@ -209,7 +209,8 @@ extension MexcKitTests {
             let error = try await #require(throws: MexcError.self) { try await orders.cancel(externalID: "ext_11", in: "BTC_USDT") }
             #expect(error.code == .orderNotFound)
             let sent = try #require(await transport.requests.first)
-            #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/order/cancel_with_external")
+            // The batch endpoint: MEXC refused the documented one-item list on `cancel_with_external`.
+            #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/order/batch_cancel_with_external")
             #expect(sent.bodyText == #"[{"externalOid":"ext_11","symbol":"BTC_USDT"}]"#)
         }
 

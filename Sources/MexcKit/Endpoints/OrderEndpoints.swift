@@ -35,8 +35,12 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
     }
 
     func cancel(externalID: MexcFutures.ExternalOrderID, in symbol: MexcFutures.Symbol) async throws {
+        // Sent to the batch endpoint, as Mexc.Net does: MEXC answered the documented one-item list on
+        // `cancel_with_external` with 600, "Parameter error".
         let body = [ExternalOrder(symbol: symbol, externalOid: externalID)]
-        let items: [BatchItem] = try await rest.send(.post("/api/v1/private/order/cancel_with_external", .json(body)))
+        let items: [BatchItem] = try await rest.send(
+            .post("/api/v1/private/order/batch_cancel_with_external", .json(body))
+        )
         if let error = items.lazy.compactMap(\.result.error).first {
             throw error
         }
