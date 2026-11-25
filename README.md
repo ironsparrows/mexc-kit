@@ -66,7 +66,7 @@ Market data and market streams need no credentials: `MexcFutures.Client()`.
 Add the package with Swift Package Manager, then add the `MexcKit` product to your target:
 
 ```swift
-.package(url: "https://github.com/ironsparrows/mexc-kit.git", from: "0.1.0"),
+.package(url: "https://github.com/ironsparrows/mexc-kit.git", from: "1.0.0"),
 ```
 
 ```swift

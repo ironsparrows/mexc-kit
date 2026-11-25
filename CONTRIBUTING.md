@@ -123,16 +123,16 @@ A pull request's label decides the release when it merges to `main`:
 
 | Label | Release | Example |
 |---|---|---|
-| `release:patch` | a fix | 0.1.0 to 0.1.1 |
-| `release:minor` | a feature | 0.1.0 to 0.2.0 |
-| `release:major` | a breaking change | 0.1.0 to 0.2.0 before 1.0, 1.2.3 to 2.0.0 after it |
+| `release:patch` | a fix | 1.0.0 to 1.0.1 |
+| `release:minor` | a feature | 1.0.0 to 1.1.0 |
+| `release:major` | a breaking change | 1.2.3 to 2.0.0 |
 
 A pull request without one releases nothing. A maintainer can also release `main` by hand: run the Release workflow and pick the bump. `.github/workflows/release.yml` works out the version from the latest `X.Y.Z` tag with `.github/scripts/release-version.sh`, builds and tests on macOS and Linux, builds for iOS, tvOS and visionOS and builds the documentation; only when all of them pass does it tag the version, publish a GitHub release whose notes `.github/release.yml` groups by label, and start the Documentation workflow.
 
-The first version, 0.1.0, and 1.0.0 are tagged by hand on `main`:
+The first version, 1.0.0, is tagged by hand on `main`, since the workflow only raises an existing tag:
 
 ```bash
-git tag -a 0.1.0 -m "MexcKit 0.1.0" && git push origin 0.1.0
+git tag -a 1.0.0 -m "MexcKit 1.0.0" && git push origin 1.0.0
 ```
 
 Then create its GitHub release, and run the Documentation workflow by hand, since nothing else starts it for a tag made by hand.
