@@ -15,10 +15,11 @@ extension MexcKitTests {
             _ = try await account.feeRates()
             _ = try await account.feeDeductions("BTC_USDT")
             _ = try await account.feeDeductions("BTC_USDT", page: .init(number: 2, size: 100))
-            #expect(await recorder.calls.value == [
-                "transfers nil nil nil 1 20", "transfers nil nil nil 2 100", "riskLimits nil", "feeRates nil",
-                "feeDeductions BTC_USDT [] nil nil 1 20", "feeDeductions BTC_USDT [] nil nil 2 100",
-            ])
+            #expect(
+                await recorder.calls.value == [
+                    "transfers nil nil nil 1 20", "transfers nil nil nil 2 100", "riskLimits nil", "feeRates nil",
+                    "feeDeductions BTC_USDT [] nil nil 1 20", "feeDeductions BTC_USDT [] nil nil 2 100",
+                ])
         }
     }
 }

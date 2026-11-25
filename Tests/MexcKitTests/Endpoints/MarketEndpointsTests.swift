@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 // Each call against a response recorded from MEXC on 2026-11-24 (IDs replaced): the exact request it
@@ -37,10 +38,12 @@ extension MexcKitTests {
             #expect(contract.initialMarginRate == Decimal(string: "0.002"))
             #expect(contract.maintenanceMarginRate == Decimal(string: "0.001"))
             #expect(contract.riskLimits.count == 6)
-            #expect(contract.riskLimits.first == .init(
-                level: 1, maximumVolume: 120_000, maintenanceMarginRate: Decimal(string: "0.001")!,
-                initialMarginRate: Decimal(string: "0.002")!, maximumLeverage: 500
-            ))
+            #expect(
+                contract.riskLimits.first
+                    == .init(
+                        level: 1, maximumVolume: 120_000, maintenanceMarginRate: Decimal(string: "0.001")!,
+                        initialMarginRate: Decimal(string: "0.002")!, maximumLeverage: 500
+                    ))
             #expect(contract.marginModes == [.isolated, .cross])
             #expect(contract.state == .enabled)
             #expect(contract.allowsAPITrading)
@@ -93,7 +96,8 @@ extension MexcKitTests {
             let (fair, fairURL) = try await call("fair") { try await $0.fairPrice(Self.btc) }
             #expect(indexURL == "https://api.mexc.com/api/v1/contract/index_price/BTC_USDT")
             #expect(fairURL == "https://api.mexc.com/api/v1/contract/fair_price/BTC_USDT")
-            #expect(index == .init(symbol: Self.btc, price: Decimal(string: "60029.2")!, time: Date(timeIntervalSince1970: 1_795_514_788.278)))
+            #expect(
+                index == .init(symbol: Self.btc, price: Decimal(string: "60029.2")!, time: Date(timeIntervalSince1970: 1_795_514_788.278)))
             #expect(fair.price == Decimal(string: "60008.3"))
         }
 
@@ -121,10 +125,12 @@ extension MexcKitTests {
             }
             #expect(url == "https://api.mexc.com/api/v1/contract/funding_rate/history?page_num=1&page_size=2&symbol=BTC_USDT")
             #expect(page.totalCount == 1620)
-            #expect(page.items.first == .init(
-                symbol: Self.btc, rate: Decimal(string: "0.000061")!, interval: .seconds(8 * 3600),
-                settledAt: Date(timeIntervalSince1970: 1_795_507_200)
-            ))
+            #expect(
+                page.items.first
+                    == .init(
+                        symbol: Self.btc, rate: Decimal(string: "0.000061")!, interval: .seconds(8 * 3600),
+                        settledAt: Date(timeIntervalSince1970: 1_795_507_200)
+                    ))
         }
 
         @Test(arguments: [
@@ -146,20 +152,24 @@ extension MexcKitTests {
         @Test func `candles decode exactly`() async throws {
             let (candles, url) = try await call("kline") { try await $0.candles(Self.btc, interval: .oneHour) }
             #expect(url == "https://api.mexc.com/api/v1/contract/kline/BTC_USDT?interval=Min60")
-            #expect(candles.first == .init(
-                time: Date(timeIntervalSince1970: 1_795_402_800), open: Decimal(string: "60588.1")!,
-                high: Decimal(string: "61937.6")!, low: Decimal(string: "60571.4")!, close: Decimal(string: "61264.5")!,
-                volume: 29_671_330, turnover: Decimal(string: "182079948.23181")!
-            ))
+            #expect(
+                candles.first
+                    == .init(
+                        time: Date(timeIntervalSince1970: 1_795_402_800), open: Decimal(string: "60588.1")!,
+                        high: Decimal(string: "61937.6")!, low: Decimal(string: "60571.4")!, close: Decimal(string: "61264.5")!,
+                        volume: 29_671_330, turnover: Decimal(string: "182079948.23181")!
+                    ))
         }
 
         @Test func `deals come newest first with their sides and effects`() async throws {
             let (deals, url) = try await call("deals") { try await $0.deals(Self.btc, limit: 3) }
             #expect(url == "https://api.mexc.com/api/v1/contract/deals/BTC_USDT?limit=3")
-            #expect(deals.first == .init(
-                id: "1000000003", price: Decimal(string: "60007.8")!, volume: 8, takerSide: .buy,
-                positionEffect: .mixed, isSelfTrade: true, time: Date(timeIntervalSince1970: 1_795_514_791.238)
-            ))
+            #expect(
+                deals.first
+                    == .init(
+                        id: "1000000003", price: Decimal(string: "60007.8")!, volume: 8, takerSide: .buy,
+                        positionEffect: .mixed, isSelfTrade: true, time: Date(timeIntervalSince1970: 1_795_514_791.238)
+                    ))
             #expect(deals.map(\.takerSide) == [.buy, .sell, .buy])
             #expect(deals.last?.positionEffect == .neitherOpened)
             #expect(deals.last?.isSelfTrade == false)
@@ -168,15 +178,17 @@ extension MexcKitTests {
         @Test func `one ticker`() async throws {
             let (ticker, url) = try await call("ticker") { try await $0.ticker(Self.btc) }
             #expect(url == "https://api.mexc.com/api/v1/contract/ticker?symbol=BTC_USDT")
-            #expect(ticker == .init(
-                symbol: Self.btc, lastPrice: Decimal(string: "60007.7")!, bestBid: Decimal(string: "60007.7")!,
-                bestAsk: Decimal(string: "60007.8")!, indexPrice: Decimal(string: "60029.7")!,
-                fairPrice: Decimal(string: "60008.6")!, fundingRate: Decimal(string: "0.000033")!,
-                openInterest: 481_053_096, high24h: Decimal(string: "64560.9")!, low24h: 59428, volume24h: 608_890_948,
-                turnover24h: Decimal(string: "3748396049.03803")!, dayChange: Decimal(string: "-2859.5")!,
-                dayChangeRate: Decimal(string: "-0.0454")!, maximumBidPrice: Decimal(string: "66032.6")!,
-                minimumAskPrice: Decimal(string: "54026.7")!, time: Date(timeIntervalSince1970: 1_795_514_789.85)
-            ))
+            #expect(
+                ticker
+                    == .init(
+                        symbol: Self.btc, lastPrice: Decimal(string: "60007.7")!, bestBid: Decimal(string: "60007.7")!,
+                        bestAsk: Decimal(string: "60007.8")!, indexPrice: Decimal(string: "60029.7")!,
+                        fairPrice: Decimal(string: "60008.6")!, fundingRate: Decimal(string: "0.000033")!,
+                        openInterest: 481_053_096, high24h: Decimal(string: "64560.9")!, low24h: 59428, volume24h: 608_890_948,
+                        turnover24h: Decimal(string: "3748396049.03803")!, dayChange: Decimal(string: "-2859.5")!,
+                        dayChangeRate: Decimal(string: "-0.0454")!, maximumBidPrice: Decimal(string: "66032.6")!,
+                        minimumAskPrice: Decimal(string: "54026.7")!, time: Date(timeIntervalSince1970: 1_795_514_789.85)
+                    ))
         }
 
         @Test func `every ticker, including one without a bid or an ask`() async throws {

@@ -118,7 +118,8 @@ extension MexcFutures.Order: Decodable {
         price = try container.decimalIfPresent(forKey: .priceStr) ?? container.decimal(forKey: .price)
         volume = try container.decimal(forKey: .vol)
         filledVolume = try container.decimal(forKey: .dealVol)
-        averageFillPrice = try (container.decimalIfPresent(forKey: .dealAvgPriceStr)
+        averageFillPrice = try
+            (container.decimalIfPresent(forKey: .dealAvgPriceStr)
             ?? container.decimalIfPresent(forKey: .dealAvgPrice)).flatMap { $0 == 0 ? nil : $0 }
         margin = try container.decimal(forKey: .orderMargin)
         usedMargin = try container.decimalIfPresent(forKey: .usedMargin)

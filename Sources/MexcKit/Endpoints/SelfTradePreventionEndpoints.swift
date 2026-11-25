@@ -5,9 +5,10 @@ struct SelfTradePreventionEndpoints: MexcFutures.SelfTradePreventionAPI {
     // MARK: - Endpoints
 
     func groups(_ name: String?) async throws -> [MexcFutures.SelfTradePreventionGroup] {
-        try await rest.send(.get(
-            "/api/v1/private/market_maker/self_trade/blacklist", query: ["configName": name], authentication: .signed
-        ))
+        try await rest.send(
+            .get(
+                "/api/v1/private/market_maker/self_trade/blacklist", query: ["configName": name], authentication: .signed
+            ))
     }
 
     func currentGroup() async throws -> MexcFutures.SelfTradePreventionGroup? {

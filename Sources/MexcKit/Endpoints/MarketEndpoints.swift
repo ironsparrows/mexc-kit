@@ -63,16 +63,20 @@ struct MarketEndpoints: MexcFutures.MarketAPI {
         _ symbol: MexcFutures.Symbol, interval: MexcFutures.Candle.Interval, start: Date?, end: Date?,
         price: MexcFutures.CandlePrice
     ) async throws -> [MexcFutures.Candle] {
-        let path = switch price {
-        case .last: "/api/v1/contract/kline/\(symbol.rawValue)"
-        case .index: "/api/v1/contract/kline/index_price/\(symbol.rawValue)"
-        case .fair: "/api/v1/contract/kline/fair_price/\(symbol.rawValue)"
-        }
-        let columns: CandleColumns = try await rest.send(.get(path, query: [
-            "interval": interval.rawValue,
-            "start": start.map(Self.seconds),
-            "end": end.map(Self.seconds),
-        ]))
+        let path =
+            switch price {
+            case .last: "/api/v1/contract/kline/\(symbol.rawValue)"
+            case .index: "/api/v1/contract/kline/index_price/\(symbol.rawValue)"
+            case .fair: "/api/v1/contract/kline/fair_price/\(symbol.rawValue)"
+            }
+        let columns: CandleColumns = try await rest.send(
+            .get(
+                path,
+                query: [
+                    "interval": interval.rawValue,
+                    "start": start.map(Self.seconds),
+                    "end": end.map(Self.seconds),
+                ]))
         return try columns.candles()
     }
 
@@ -135,9 +139,10 @@ private struct CandleColumns: Decodable, Sendable {
     func candles() throws -> [MexcFutures.Candle] {
         let counts = [open.count, high.count, low.count, close.count, vol.count, amount.count]
         guard counts.allSatisfy({ $0 == time.count }) else {
-            throw DecodingError.dataCorrupted(.init(
-                codingPath: [], debugDescription: "Candle columns differ in length: \(time.count) times, \(counts)"
-            ))
+            throw DecodingError.dataCorrupted(
+                .init(
+                    codingPath: [], debugDescription: "Candle columns differ in length: \(time.count) times, \(counts)"
+                ))
         }
         return time.indices.map { index in
             MexcFutures.Candle(

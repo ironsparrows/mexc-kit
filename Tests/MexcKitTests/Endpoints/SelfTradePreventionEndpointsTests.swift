@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 // Private responses can't be recorded without the user's key, so the group list runs against the example
@@ -13,21 +14,26 @@ extension MexcKitTests {
         @Test func `the groups`() async throws {
             let transport = try FakeTransport(fixture: "SelfTradePrevention/blacklist")
             let groups = try await SelfTradePreventionEndpoints(rest: .test(transport: transport)).groups("stpconfi001")
-            #expect(await transport.requests.first?.url.absoluteString == """
-                https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist?configName=stpconfi001
-                """)
-            #expect(groups == [.init(
-                name: "stpconfi001", members: ["45359845", "72009483"],
-                createdAt: Date(timeIntervalSince1970: 1_768_804_555), updatedAt: Date(timeIntervalSince1970: 1_768_804_555)
-            )])
+            #expect(
+                await transport.requests.first?.url.absoluteString == """
+                    https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist?configName=stpconfi001
+                    """)
+            #expect(
+                groups == [
+                    .init(
+                        name: "stpconfi001", members: ["45359845", "72009483"],
+                        createdAt: Date(timeIntervalSince1970: 1_768_804_555), updatedAt: Date(timeIntervalSince1970: 1_768_804_555)
+                    )
+                ])
         }
 
         @Test func `every group`() async throws {
             let transport = FakeTransport(json: #"{"success":true,"code":0,"data":[]}"#)
             #expect(try await SelfTradePreventionEndpoints(rest: .test(transport: transport)).groups().isEmpty)
-            #expect(await transport.requests.first?.url.absoluteString == """
-                https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist
-                """)
+            #expect(
+                await transport.requests.first?.url.absoluteString == """
+                    https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist
+                    """)
         }
 
         @Test(arguments: [
@@ -39,9 +45,10 @@ extension MexcKitTests {
             let transport = FakeTransport(json: json)
             let group = try await SelfTradePreventionEndpoints(rest: .test(transport: transport)).currentGroup()
             #expect(group?.name == name)
-            #expect(await transport.requests.first?.url.absoluteString == """
-                https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist/search
-                """)
+            #expect(
+                await transport.requests.first?.url.absoluteString == """
+                    https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist/search
+                    """)
         }
 
         @Test func `creating, updating and deleting a group`() async throws {
@@ -51,16 +58,18 @@ extension MexcKitTests {
             try await endpoints.update("g1", members: ["45359845"])
             try await endpoints.delete("g1")
             let sent = await transport.requests
-            #expect(sent.map(\.url.absoluteString) == [
-                "https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist/create",
-                "https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist/update",
-                "https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist/delete",
-            ])
-            #expect(sent.map(\.bodyText) == [
-                #"{"blacklist":[45359845,72009483],"configName":"g1"}"#,
-                #"{"blacklist":[45359845],"configName":"g1"}"#,
-                #"{"configName":"g1"}"#,
-            ])
+            #expect(
+                sent.map(\.url.absoluteString) == [
+                    "https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist/create",
+                    "https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist/update",
+                    "https://api.mexc.com/api/v1/private/market_maker/self_trade/blacklist/delete",
+                ])
+            #expect(
+                sent.map(\.bodyText) == [
+                    #"{"blacklist":[45359845,72009483],"configName":"g1"}"#,
+                    #"{"blacklist":[45359845],"configName":"g1"}"#,
+                    #"{"configName":"g1"}"#,
+                ])
             #expect(sent.allSatisfy { $0.method == .post && $0.headers.contains { $0.name == "Signature" } })
         }
 

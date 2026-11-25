@@ -281,10 +281,11 @@ actor StreamConnection {
         let route = subscription.route
         if let topic = topics[route] {
             guard topic.subscription == subscription else {
-                consumer.fail(MexcFutures.ClientError(
-                    .invalidRequest,
-                    message: "\(topic.subscription.name) are open, so \(subscription.name) can't be streamed at the same time"
-                ))
+                consumer.fail(
+                    MexcFutures.ClientError(
+                        .invalidRequest,
+                        message: "\(topic.subscription.name) are open, so \(subscription.name) can't be streamed at the same time"
+                    ))
                 return
             }
             topics[route]?.consumers[id] = consumer
@@ -446,10 +447,11 @@ actor StreamConnection {
             }
             let signer = RequestSigner(credentials: try await credentials())
             let requestTime = String(await clock.now().millisecondsSince1970)
-            request = LoginRequest(
-                apiKey: signer.credentials.apiKey, requestTime: requestTime,
-                signature: signer.signature(requestTime: requestTime, parameters: "")
-            ).text
+            request =
+                LoginRequest(
+                    apiKey: signer.credentials.apiKey, requestTime: requestTime,
+                    signature: signer.signature(requestTime: requestTime, parameters: "")
+                ).text
         } catch {
             failAll(with: error)
             return

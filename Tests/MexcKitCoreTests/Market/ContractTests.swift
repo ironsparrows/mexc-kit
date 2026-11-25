@@ -47,7 +47,9 @@ extension MexcKitCoreTests {
             #expect(tiny.round(price: 0.000018, rule: .toNearestOrEven) == Decimal(string: "0.000018"))
         }
 
-        @Test(arguments: [(1, [MexcFutures.MarginMode.isolated]), (2, [.cross]), (3, [.isolated, .cross]), (9, [])] as [(Int, Set<MexcFutures.MarginMode>)])
+        @Test(
+            arguments: [(1, [MexcFutures.MarginMode.isolated]), (2, [.cross]), (3, [.isolated, .cross]), (9, [])]
+                as [(Int, Set<MexcFutures.MarginMode>)])
         func `the opening type gives the margin modes`(openType: Int, modes: Set<MexcFutures.MarginMode>) throws {
             let json = """
                 {"symbol":"BTC_USDT","displayNameEn":"BTC","baseCoin":"BTC","quoteCoin":"USDT","settleCoin":"USDT",

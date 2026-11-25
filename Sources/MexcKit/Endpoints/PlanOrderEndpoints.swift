@@ -55,15 +55,17 @@ struct PlanOrderEndpoints: MexcFutures.PlanOrderAPI {
         start: Date, end: Date, page: MexcFutures.PageRequest
     ) async throws -> [MexcFutures.PlanOrder] {
         let orders: ArrayOrPage<MexcFutures.PlanOrder> = try await rest.send(
-            .get("/api/v1/private/planorder/list/orders", query: [
-                "symbol": symbol?.rawValue,
-                "states": states.isEmpty ? nil : states.map { String($0.rawValue) }.joined(separator: ","),
-                "side": side.map { String($0.rawValue) },
-                "start_time": String(start.millisecondsSince1970),
-                "end_time": String(end.millisecondsSince1970),
-                "page_num": String(page.number),
-                "page_size": String(page.size),
-            ], authentication: .signed)
+            .get(
+                "/api/v1/private/planorder/list/orders",
+                query: [
+                    "symbol": symbol?.rawValue,
+                    "states": states.isEmpty ? nil : states.map { String($0.rawValue) }.joined(separator: ","),
+                    "side": side.map { String($0.rawValue) },
+                    "start_time": String(start.millisecondsSince1970),
+                    "end_time": String(end.millisecondsSince1970),
+                    "page_num": String(page.number),
+                    "page_size": String(page.size),
+                ], authentication: .signed)
         )
         return orders.items
     }

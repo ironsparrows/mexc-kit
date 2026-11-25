@@ -2,6 +2,7 @@ import Foundation
 import MexcKitProtobuf
 import SwiftProtobuf
 import Testing
+
 @testable import MexcKit
 
 extension MexcKitTests {
@@ -19,7 +20,8 @@ extension MexcKitTests {
 
         @Test func `two consumers of one route share a subscription, and the last one's end closes the connection`() async throws {
             let connection = makeConnection()
-            let first = Recorder(), second = Recorder()
+            let first = Recorder()
+            let second = Recorder()
             var closes = server.closes.makeAsyncIterator()
             await connection.subscribe(Self.ticker, id: first.id, consumer: first.consumer)
             await connection.subscribe(Self.ticker, id: second.id, consumer: second.consumer)
@@ -50,7 +52,8 @@ extension MexcKitTests {
 
         @Test func `a route whose consumers end while its request is in flight is unsubscribed once acknowledged`() async throws {
             let connection = makeConnection()
-            let open = Recorder(), leaving = Recorder()
+            let open = Recorder()
+            let leaving = Recorder()
             await connection.subscribe(Self.ticker, id: open.id, consumer: open.consumer)
             try await acknowledge(1)
             await connection.subscribe(Self.indexPrice, id: leaving.id, consumer: leaving.consumer)
@@ -63,8 +66,11 @@ extension MexcKitTests {
 
         @Test func `a route subscribed again with other parameters while its old request is in flight gets its own request`() async throws {
             let connection = makeConnection()
-            let open = Recorder(), tenths = Recorder(), hundredths = Recorder()
-            let byTenths = Self.step("0.1"), byHundredths = Self.step("0.01")
+            let open = Recorder()
+            let tenths = Recorder()
+            let hundredths = Recorder()
+            let byTenths = Self.step("0.1")
+            let byHundredths = Self.step("0.01")
             await connection.subscribe(Self.ticker, id: open.id, consumer: open.consumer)
             try await acknowledge(1)
             await connection.subscribe(byTenths, id: tenths.id, consumer: tenths.consumer)
@@ -89,9 +95,10 @@ extension MexcKitTests {
 
             await server.acknowledge(try Self.channel(of: firstRequest))
             let secondRequest = await server.nextSent()
-            #expect(Set([firstRequest, secondRequest]) == [
-                Self.ticker.subscribeRequest, #"{"method":"sub.fair.price","param":{"symbol":"BTC_USDT"}}"#,
-            ])
+            #expect(
+                Set([firstRequest, secondRequest]) == [
+                    Self.ticker.subscribeRequest, #"{"method":"sub.fair.price","param":{"symbol":"BTC_USDT"}}"#,
+                ])
             withExtendedLifetime((ticker, prices)) {}
         }
 
@@ -181,7 +188,10 @@ extension MexcKitTests {
 
             let error = try await #require(throws: MexcFutures.ClientError.self) { try await hundredths.value }
             #expect(error.reason == .invalidRequest)
-            #expect(error.message == "DOGE_USDT order books grouped by step 0.1 are open, so DOGE_USDT order books grouped by step 0.01 can't be streamed at the same time")
+            #expect(
+                error.message
+                    == "DOGE_USDT order books grouped by step 0.1 are open, so DOGE_USDT order books grouped by step 0.01 can't be streamed at the same time"
+            )
             withExtendedLifetime(tenths) {}
         }
 

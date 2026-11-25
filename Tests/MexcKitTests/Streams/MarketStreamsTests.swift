@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 extension MexcKitTests {
@@ -149,7 +150,9 @@ extension MexcKitTests {
                 of: streams.indexPrice("BTC_USDT"), request: #"{"method":"sub.index.price","param":{"symbol":"BTC_USDT"}}"#,
                 acknowledgedOn: "index.price", push: "push.index.price.BTC_USDT"
             )
-            #expect(price == .init(symbol: "BTC_USDT", price: Decimal(string: "60426.7")!, time: Date(timeIntervalSince1970: 1_795_506_146.416)))
+            #expect(
+                price == .init(symbol: "BTC_USDT", price: Decimal(string: "60426.7")!, time: Date(timeIntervalSince1970: 1_795_506_146.416))
+            )
         }
 
         @Test func `a fair price decodes with the push's time`() async throws {

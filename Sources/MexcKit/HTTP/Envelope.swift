@@ -49,9 +49,11 @@ enum Envelope {
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             success = try? container.decode(Bool.self, forKey: .success)
-            code = (try? container.decode(Int.self, forKey: .code))
+            code =
+                (try? container.decode(Int.self, forKey: .code))
                 ?? (try? container.decode(String.self, forKey: .code)).flatMap { Int($0) }
-            message = (try? container.decode(String.self, forKey: .message))
+            message =
+                (try? container.decode(String.self, forKey: .message))
                 ?? (try? container.decode(String.self, forKey: .msg))
             data = Result {
                 // An endpoint without data reads none, whatever MEXC sends.

@@ -1,6 +1,7 @@
 import Foundation
 import MexcKitTestSupport
 import Testing
+
 @testable import MexcKit
 
 /// A ``WebSocketTransport`` whose server the test plays: it reads what the client sends and sends

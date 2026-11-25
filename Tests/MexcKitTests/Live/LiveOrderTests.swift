@@ -98,30 +98,35 @@ extension MexcKitTests.LiveTrading {
                 if let error = batch.compactMap({ $0.error }).first { throw error }
                 let canceled = try await client.order.cancel(batch.compactMap { $0.id })
                 #expect(canceled.allSatisfy { $0.succeeded })
-            } matching: { $0.error is MexcError }
+            } matching: {
+                $0.error is MexcError
+            }
 
             await #expect(throws: Never.self) {
                 let externalID = MexcFutures.ExternalOrderID(rawValue: "live-\(UUID().uuidString.prefix(8))")
-                _ = try await client.order.place(.open(
-                    .long, Self.btc, .postOnly(price: price), volume: volume, leverage: 5, marginMode: .isolated,
-                    externalID: externalID, options: options
-                ))
+                _ = try await client.order.place(
+                    .open(
+                        .long, Self.btc, .postOnly(price: price), volume: volume, leverage: 5, marginMode: .isolated,
+                        externalID: externalID, options: options
+                    ))
                 try await client.order.cancel(externalID: externalID, in: Self.btc)
             }
 
             // Chasing moves the limit buy to the best bid, where it can fill.
             await #expect(throws: Never.self) {
-                let chased = try await client.order.place(.open(
-                    .long, Self.btc, .limit(price: price), volume: volume, leverage: 5, marginMode: .isolated, options: options
-                ))
+                let chased = try await client.order.place(
+                    .open(
+                        .long, Self.btc, .limit(price: price), volume: volume, leverage: 5, marginMode: .isolated, options: options
+                    ))
                 try await client.order.chase(chased.id)
             }
             try await client.order.cancelAll()
             if let position = try await client.position.list(Self.btc).first(where: { $0.side == .long }) {
-                _ = try await client.order.place(.close(
-                    .long, Self.btc, .market, volume: position.volume, marginMode: .isolated, position: position.id,
-                    options: options
-                ))
+                _ = try await client.order.place(
+                    .close(
+                        .long, Self.btc, .market, volume: position.volume, marginMode: .isolated, position: position.id,
+                        options: options
+                    ))
             }
             #expect(try await client.position.list(Self.btc).isEmpty)
 

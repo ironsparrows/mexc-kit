@@ -69,15 +69,19 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
 
     func get(_ ids: [MexcFutures.OrderID]) async throws -> [MexcFutures.Order] {
         guard !ids.isEmpty else { return [] }
-        return try await rest.send(.get("/api/v1/private/order/batch_query", query: [
-            "order_ids": ids.map(\.rawValue).joined(separator: ","),
-        ], authentication: .signed))
+        return try await rest.send(
+            .get(
+                "/api/v1/private/order/batch_query",
+                query: [
+                    "order_ids": ids.map(\.rawValue).joined(separator: ",")
+                ], authentication: .signed))
     }
 
     func get(externalID: MexcFutures.ExternalOrderID, in symbol: MexcFutures.Symbol) async throws -> MexcFutures.Order {
-        try await rest.send(.get(
-            "/api/v1/private/order/external/\(symbol.rawValue)/\(externalID.rawValue)", authentication: .signed
-        ))
+        try await rest.send(
+            .get(
+                "/api/v1/private/order/external/\(symbol.rawValue)/\(externalID.rawValue)", authentication: .signed
+            ))
     }
 
     func get(
@@ -90,10 +94,12 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
 
     func pending(page: MexcFutures.PageRequest) async throws -> [MexcFutures.Order] {
         let orders: ArrayOrPage<MexcFutures.Order> = try await rest.send(
-            .get("/api/v1/private/order/list/open_orders", query: [
-                "page_num": String(page.number),
-                "page_size": String(page.size),
-            ], authentication: .signed)
+            .get(
+                "/api/v1/private/order/list/open_orders",
+                query: [
+                    "page_num": String(page.number),
+                    "page_size": String(page.size),
+                ], authentication: .signed)
         )
         return orders.items
     }
@@ -103,16 +109,18 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
         start: Date?, end: Date?, page: MexcFutures.PageRequest
     ) async throws -> [MexcFutures.Order] {
         let orders: ArrayOrPage<MexcFutures.Order> = try await rest.send(
-            .get("/api/v1/private/order/list/history_orders", query: [
-                "symbol": symbol.rawValue,
-                // No states sends none, for any state, as plan orders do.
-                "states": states.isEmpty ? nil : states.map { String($0.rawValue) }.joined(separator: ","),
-                "category": category.map { String($0.rawValue) },
-                "start_time": start.map(Self.milliseconds),
-                "end_time": end.map(Self.milliseconds),
-                "page_num": String(page.number),
-                "page_size": String(page.size),
-            ], authentication: .signed)
+            .get(
+                "/api/v1/private/order/list/history_orders",
+                query: [
+                    "symbol": symbol.rawValue,
+                    // No states sends none, for any state, as plan orders do.
+                    "states": states.isEmpty ? nil : states.map { String($0.rawValue) }.joined(separator: ","),
+                    "category": category.map { String($0.rawValue) },
+                    "start_time": start.map(Self.milliseconds),
+                    "end_time": end.map(Self.milliseconds),
+                    "page_num": String(page.number),
+                    "page_size": String(page.size),
+                ], authentication: .signed)
         )
         return orders.items
     }
@@ -121,13 +129,15 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
         _ symbol: MexcFutures.Symbol, start: Date?, end: Date?, page: MexcFutures.PageRequest
     ) async throws -> [MexcFutures.Order] {
         let orders: ArrayOrPage<MexcFutures.Order> = try await rest.send(
-            .get("/api/v1/private/order/list/close_orders", query: [
-                "symbol": symbol.rawValue,
-                "start_time": start.map(Self.milliseconds),
-                "end_time": end.map(Self.milliseconds),
-                "page_num": String(page.number),
-                "page_size": String(page.size),
-            ], authentication: .signed)
+            .get(
+                "/api/v1/private/order/list/close_orders",
+                query: [
+                    "symbol": symbol.rawValue,
+                    "start_time": start.map(Self.milliseconds),
+                    "end_time": end.map(Self.milliseconds),
+                    "page_num": String(page.number),
+                    "page_size": String(page.size),
+                ], authentication: .signed)
         )
         return orders.items
     }
@@ -136,13 +146,15 @@ struct OrderEndpoints: MexcFutures.OrderAPI {
         _ symbol: MexcFutures.Symbol, start: Date?, end: Date?, page: MexcFutures.PageRequest
     ) async throws -> [MexcFutures.Fill] {
         let fills: ArrayOrPage<MexcFutures.Fill> = try await rest.send(
-            .get("/api/v1/private/order/list/order_deals/v3", query: [
-                "symbol": symbol.rawValue,
-                "start_time": start.map(Self.milliseconds),
-                "end_time": end.map(Self.milliseconds),
-                "page_num": String(page.number),
-                "page_size": String(page.size),
-            ], authentication: .signed)
+            .get(
+                "/api/v1/private/order/list/order_deals/v3",
+                query: [
+                    "symbol": symbol.rawValue,
+                    "start_time": start.map(Self.milliseconds),
+                    "end_time": end.map(Self.milliseconds),
+                    "page_num": String(page.number),
+                    "page_size": String(page.size),
+                ], authentication: .signed)
         )
         return fills.items
     }
@@ -196,8 +208,9 @@ private struct OrderBody: Encodable, Sendable {
         if request.pricing.bestPrice != nil, request.externalID != nil {
             throw MexcFutures.ClientError(.invalidRequest, message: "A best-price order can't have an external ID")
         }
-        if inBatch, request.takeProfit != nil || request.stopLoss != nil || options.triggerProtection
-            || request.pricing.bestPrice != nil
+        if inBatch,
+            request.takeProfit != nil || request.stopLoss != nil || options.triggerProtection
+                || request.pricing.bestPrice != nil
         {
             throw MexcFutures.ClientError(
                 .invalidRequest,

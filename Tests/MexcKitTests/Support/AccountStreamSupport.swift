@@ -1,6 +1,7 @@
 import Foundation
 import MexcKitProtobuf
 import SwiftProtobuf
+
 @testable import MexcKit
 
 /// What the account stream suites share: an account that logs in with a fixed key and time, its
@@ -12,7 +13,8 @@ enum AccountStreamSupport {
     )
     /// The login for the account above: the signature is HMAC-SHA256 over the API key and the request
     /// time, as REST signs a request without parameters.
-    static let login = #"{"method":"login","param":{"apiKey":"mx0testkey","reqTime":"1700000000000","#
+    static let login =
+        #"{"method":"login","param":{"apiKey":"mx0testkey","reqTime":"1700000000000","#
         + #""signature":"714a5b3c4e04c2cb808c224fe8f77bbbec89c8014d52eee3d9b064004ca0e9f9"},"subscribe":false}"#
 
     static func filter(_ filters: String) -> String {

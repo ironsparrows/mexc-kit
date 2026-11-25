@@ -32,27 +32,31 @@ extension MexcKitTests.LiveTrading {
             )
             let position = try #require(try await client.position.list(Self.btc).first { $0.side == .long })
 
-            let stop = try await client.stopOrder.place(.init(
-                position: position.id, volume: volume,
-                stopLoss: .market(at: contract.round(price: last * Decimal(string: "0.9")!, rule: .down))
-            ))
-            let trailing = try await client.trailingOrder.place(.close(
-                .long, Self.btc, volume: volume, leverage: 5, marginMode: .isolated, callback: .percentage(Decimal(string: "0.05")!),
-                activationPrice: contract.round(price: last * Decimal(string: "1.5")!, rule: .up), positionMode: mode
-            ))
-            let plan = try await client.planOrder.place(.open(
-                .long, Self.btc, .market, volume: volume, leverage: 5, marginMode: .isolated,
-                trigger: .init(price: contract.round(price: last * Decimal(string: "1.5")!, rule: .up), condition: .atOrAbove),
-                lifetime: .oneDay, options: .init(positionMode: mode)
-            ))
+            let stop = try await client.stopOrder.place(
+                .init(
+                    position: position.id, volume: volume,
+                    stopLoss: .market(at: contract.round(price: last * Decimal(string: "0.9")!, rule: .down))
+                ))
+            let trailing = try await client.trailingOrder.place(
+                .close(
+                    .long, Self.btc, volume: volume, leverage: 5, marginMode: .isolated, callback: .percentage(Decimal(string: "0.05")!),
+                    activationPrice: contract.round(price: last * Decimal(string: "1.5")!, rule: .up), positionMode: mode
+                ))
+            let plan = try await client.planOrder.place(
+                .open(
+                    .long, Self.btc, .market, volume: volume, leverage: 5, marginMode: .isolated,
+                    trigger: .init(price: contract.round(price: last * Decimal(string: "1.5")!, rule: .up), condition: .atOrAbove),
+                    lifetime: .oneDay, options: .init(positionMode: mode)
+                ))
 
             try await client.stopOrder.cancel(stop)
             try await client.trailingOrder.cancel(trailing, in: Self.btc)
             try await client.planOrder.cancel(plan, in: Self.btc)
-            _ = try await client.order.place(.close(
-                .long, Self.btc, .market, volume: volume, marginMode: .isolated, position: position.id,
-                options: .init(positionMode: mode)
-            ))
+            _ = try await client.order.place(
+                .close(
+                    .long, Self.btc, .market, volume: volume, marginMode: .isolated, position: position.id,
+                    options: .init(positionMode: mode)
+                ))
 
             await #expect(throws: Never.self) { _ = try await client.stopOrder.pending(Self.btc) }
             await #expect(throws: Never.self) { _ = try await client.stopOrder.list(Self.btc) }
@@ -78,24 +82,28 @@ extension MexcKitTests.LiveTrading {
 
             // Checked as one step, so the close and the cancels below always run.
             await #expect(throws: Never.self) {
-                let stop = try await client.stopOrder.place(.init(
-                    position: position.id, volume: volume, stopLoss: .market(at: below("0.9"))
-                ))
+                let stop = try await client.stopOrder.place(
+                    .init(
+                        position: position.id, volume: volume, stopLoss: .market(at: below("0.9"))
+                    ))
                 try await client.stopOrder.modify(stop, takeProfit: .init(price: above("1.5")), stopLoss: .init(price: below("0.85")))
 
-                let trailing = try await client.trailingOrder.place(.close(
-                    .long, Self.btc, volume: volume, leverage: 5, marginMode: .isolated, callback: .percentage(Decimal(string: "0.05")!),
-                    activationPrice: above("1.5"), positionMode: mode
-                ))
+                let trailing = try await client.trailingOrder.place(
+                    .close(
+                        .long, Self.btc, volume: volume, leverage: 5, marginMode: .isolated,
+                        callback: .percentage(Decimal(string: "0.05")!),
+                        activationPrice: above("1.5"), positionMode: mode
+                    ))
                 try await client.trailingOrder.modify(
                     trailing, in: Self.btc, volume: volume, callback: .percentage(Decimal(string: "0.06")!),
                     activationPrice: above("1.6"), source: .last
                 )
 
-                let plan = try await client.planOrder.place(.open(
-                    .long, Self.btc, .limit(price: above("1.5")), volume: volume, leverage: 5, marginMode: .isolated,
-                    trigger: .init(price: above("1.5"), condition: .atOrAbove), lifetime: .oneDay, options: .init(positionMode: mode)
-                ))
+                let plan = try await client.planOrder.place(
+                    .open(
+                        .long, Self.btc, .limit(price: above("1.5")), volume: volume, leverage: 5, marginMode: .isolated,
+                        trigger: .init(price: above("1.5"), condition: .atOrAbove), lifetime: .oneDay, options: .init(positionMode: mode)
+                    ))
                 try await client.planOrder.modify(
                     plan, in: Self.btc, trigger: .init(price: above("1.6"), condition: .atOrAbove), pricing: .limit(price: above("1.6"))
                 )
@@ -107,10 +115,11 @@ extension MexcKitTests.LiveTrading {
                 try await client.trailingOrder.cancel(trailing, in: Self.btc)
                 try await client.planOrder.cancelAll(Self.btc)
             }
-            _ = try await client.order.place(.close(
-                .long, Self.btc, .market, volume: volume, marginMode: .isolated, position: position.id,
-                options: .init(positionMode: mode)
-            ))
+            _ = try await client.order.place(
+                .close(
+                    .long, Self.btc, .market, volume: volume, marginMode: .isolated, position: position.id,
+                    options: .init(positionMode: mode)
+                ))
             // Left over only when the step above failed: there may be nothing to cancel.
             _ = try? await client.planOrder.cancelAll(Self.btc)
             _ = try? await client.stopOrder.cancelAll(Self.btc)

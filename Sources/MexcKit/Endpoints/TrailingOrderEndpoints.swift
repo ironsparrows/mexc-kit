@@ -31,18 +31,20 @@ struct TrailingOrderEndpoints: MexcFutures.TrailingOrderAPI {
         start: Date?, end: Date?, page: MexcFutures.PageRequest
     ) async throws -> [MexcFutures.TrailingOrder] {
         let orders: ArrayOrPage<MexcFutures.TrailingOrder> = try await rest.send(
-            .get("/api/v1/private/trackorder/list/orders", query: [
-                "symbol": symbol?.rawValue,
-                // MEXC requires states; none means every state.
-                "states": (states.isEmpty ? Self.everyState : states).map { String($0.rawValue) }
-                    .joined(separator: ","),
-                "side": side.map { String($0.rawValue) },
-                "start_time": start.map { String($0.millisecondsSince1970) },
-                "end_time": end.map { String($0.millisecondsSince1970) },
-                // Unlike MEXC's other lists, this one names its page parameters in camel case.
-                "pageIndex": String(page.number),
-                "pageSize": String(page.size),
-            ], authentication: .signed)
+            .get(
+                "/api/v1/private/trackorder/list/orders",
+                query: [
+                    "symbol": symbol?.rawValue,
+                    // MEXC requires states; none means every state.
+                    "states": (states.isEmpty ? Self.everyState : states).map { String($0.rawValue) }
+                        .joined(separator: ","),
+                    "side": side.map { String($0.rawValue) },
+                    "start_time": start.map { String($0.millisecondsSince1970) },
+                    "end_time": end.map { String($0.millisecondsSince1970) },
+                    // Unlike MEXC's other lists, this one names its page parameters in camel case.
+                    "pageIndex": String(page.number),
+                    "pageSize": String(page.size),
+                ], authentication: .signed)
         )
         return orders.items
     }

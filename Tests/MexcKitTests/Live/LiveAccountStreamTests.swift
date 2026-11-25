@@ -58,24 +58,28 @@ extension MexcKitTests.LiveTrading {
             )
             let position = try #require(try await client.position.list(Self.btc).first { $0.side == .long })
 
-            let stop = try await client.stopOrder.place(.init(
-                position: position.id, volume: volume,
-                stopLoss: .market(at: contract.round(price: last * Decimal(string: "0.9")!, rule: .down))
-            ))
-            let trailingOrder = try await client.trailingOrder.place(.close(
-                .long, Self.btc, volume: volume, leverage: 5, marginMode: .isolated, callback: .percentage(Decimal(string: "0.05")!),
-                activationPrice: contract.round(price: last * Decimal(string: "1.5")!, rule: .up),
-                positionMode: mode
-            ))
-            let plan = try await client.planOrder.place(.open(
-                .long, Self.btc, .market, volume: volume, leverage: 5, marginMode: .isolated,
-                trigger: .init(price: contract.round(price: last * Decimal(string: "1.5")!, rule: .up), condition: .atOrAbove),
-                lifetime: .oneDay, options: .init(positionMode: mode)
-            ))
-            let limit = try await client.order.place(.open(
-                .long, Self.btc, .limit(price: contract.round(price: last * Decimal(string: "0.9")!, rule: .down)),
-                volume: volume, leverage: 5, marginMode: .isolated, options: options
-            ))
+            let stop = try await client.stopOrder.place(
+                .init(
+                    position: position.id, volume: volume,
+                    stopLoss: .market(at: contract.round(price: last * Decimal(string: "0.9")!, rule: .down))
+                ))
+            let trailingOrder = try await client.trailingOrder.place(
+                .close(
+                    .long, Self.btc, volume: volume, leverage: 5, marginMode: .isolated, callback: .percentage(Decimal(string: "0.05")!),
+                    activationPrice: contract.round(price: last * Decimal(string: "1.5")!, rule: .up),
+                    positionMode: mode
+                ))
+            let plan = try await client.planOrder.place(
+                .open(
+                    .long, Self.btc, .market, volume: volume, leverage: 5, marginMode: .isolated,
+                    trigger: .init(price: contract.round(price: last * Decimal(string: "1.5")!, rule: .up), condition: .atOrAbove),
+                    lifetime: .oneDay, options: .init(positionMode: mode)
+                ))
+            let limit = try await client.order.place(
+                .open(
+                    .long, Self.btc, .limit(price: contract.round(price: last * Decimal(string: "0.9")!, rule: .down)),
+                    volume: volume, leverage: 5, marginMode: .isolated, options: options
+                ))
             try await client.stopOrder.setAttachedStops(
                 of: limit.id, takeProfit: .init(price: contract.round(price: last, rule: .up)),
                 stopLoss: .init(price: contract.round(price: last * Decimal(string: "0.8")!, rule: .down))

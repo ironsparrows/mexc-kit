@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 extension MexcKitTests {
@@ -229,20 +230,22 @@ extension MexcKitTests {
             #expect(snapshot.version == 43_833_673_146)
 
             // The last recorded change arrives first, so the two before it are missing.
-            pushes.yield(MexcFutures.OrderBook.Change(
-                asks: [], bids: [MexcFutures.OrderBook.Level(price: Decimal(string: "60007.7")!, volume: 206_189, orderCount: 2)],
-                version: 43_833_673_149
-            ))
+            pushes.yield(
+                MexcFutures.OrderBook.Change(
+                    asks: [], bids: [MexcFutures.OrderBook.Level(price: Decimal(string: "60007.7")!, volume: 206_189, orderCount: 2)],
+                    version: 43_833_673_149
+                ))
             let book = try #require(try await books.next())
             #expect(book.version == 43_833_673_149)
             #expect(book.asks.first { $0.price == Decimal(string: "60007.8")! }?.volume == 393_945)
             #expect(book.bids.first { $0.price == Decimal(string: "60007.7")! }?.volume == 206_189)
             #expect(zip(book.asks, book.asks.dropFirst()).allSatisfy { $0.price < $1.price })
             #expect(zip(book.bids, book.bids.dropFirst()).allSatisfy { $0.price > $1.price })
-            #expect(await transport.requests.map(\.url.absoluteString) == [
-                "https://api.mexc.com/api/v1/contract/depth/BTC_USDT?limit=1000",
-                "https://api.mexc.com/api/v1/contract/depth_commits/BTC_USDT/1000",
-            ])
+            #expect(
+                await transport.requests.map(\.url.absoluteString) == [
+                    "https://api.mexc.com/api/v1/contract/depth/BTC_USDT?limit=1000",
+                    "https://api.mexc.com/api/v1/contract/depth_commits/BTC_USDT/1000",
+                ])
         }
 
         // MARK: Helpers

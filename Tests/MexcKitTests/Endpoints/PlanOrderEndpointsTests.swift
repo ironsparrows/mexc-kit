@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 // Private responses can't be recorded without the user's key, so the place and list calls run against
@@ -22,11 +23,12 @@ extension MexcKitTests {
             #expect(id == Self.id)
             #expect(sent.method == .post)
             #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/planorder/place/v2")
-            #expect(sent.bodyText == """
-                {"executeCycle":2,"leverage":10,"lossTrend":3,"openType":1,"orderType":1,"positionMode":2,\
-                "price":61000.5,"priceProtect":1,"profitTrend":1,"reduceOnly":true,"side":1,"stopLossPrice":58000,\
-                "symbol":"BTC_USDT","takeProfitPrice":64000,"trend":2,"triggerPrice":61000,"triggerType":1,"vol":2}
-                """)
+            #expect(
+                sent.bodyText == """
+                    {"executeCycle":2,"leverage":10,"lossTrend":3,"openType":1,"orderType":1,"positionMode":2,\
+                    "price":61000.5,"priceProtect":1,"profitTrend":1,"reduceOnly":true,"side":1,"stopLossPrice":58000,\
+                    "symbol":"BTC_USDT","takeProfitPrice":64000,"trend":2,"triggerPrice":61000,"triggerType":1,"vol":2}
+                    """)
         }
 
         @Test func `placing a closing market plan order sends no price, leverage or options`() async throws {
@@ -35,10 +37,11 @@ extension MexcKitTests {
                 trigger: .init(price: 58000, condition: .atOrBelow), lifetime: .oneDay
             )
             let (_, sent) = try await call(fixture: "PlanOrder/place") { try await $0.place(request) }
-            #expect(sent.bodyText == """
-                {"executeCycle":1,"openType":2,"orderType":5,"side":2,"symbol":"BTC_USDT","trend":1,\
-                "triggerPrice":58000,"triggerType":2,"vol":1}
-                """)
+            #expect(
+                sent.bodyText == """
+                    {"executeCycle":1,"openType":2,"orderType":5,"side":2,"symbol":"BTC_USDT","trend":1,\
+                    "triggerPrice":58000,"triggerType":2,"vol":1}
+                    """)
         }
 
         @Test func `a best-price plan order throws before sending`() async throws {
@@ -87,10 +90,11 @@ extension MexcKitTests {
                 )
             }
             #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/planorder/change_price")
-            #expect(sent.bodyText == """
-                {"orderId":739206374277809664,"orderType":2,"price":60400,"symbol":"BTC_USDT","trend":3,\
-                "triggerPrice":60500,"triggerType":2}
-                """)
+            #expect(
+                sent.bodyText == """
+                    {"orderId":739206374277809664,"orderType":2,"price":60400,"symbol":"BTC_USDT","trend":3,\
+                    "triggerPrice":60500,"triggerType":2}
+                    """)
         }
 
         @Test func `setting and removing a plan order's attached stops`() async throws {
@@ -112,9 +116,10 @@ extension MexcKitTests {
                 try await $0.cancel([Self.id, .init(rawValue: "2")], in: "BTC_USDT")
             }
             #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/planorder/cancel")
-            #expect(sent.bodyText == """
-                [{"orderId":"739206374277809664","symbol":"BTC_USDT"},{"orderId":"2","symbol":"BTC_USDT"}]
-                """)
+            #expect(
+                sent.bodyText == """
+                    [{"orderId":"739206374277809664","symbol":"BTC_USDT"},{"orderId":"2","symbol":"BTC_USDT"}]
+                    """)
         }
 
         @Test(arguments: [(MexcFutures.Symbol?.some("BTC_USDT"), #"{"symbol":"BTC_USDT"}"#), (nil, "{}")])
@@ -134,30 +139,35 @@ extension MexcKitTests {
                 )
             }
             #expect(sent.method == .get)
-            #expect(sent.url.absoluteString == """
-                https://api.mexc.com/api/v1/private/planorder/list/orders\
-                ?end_time=1761900000000&page_num=2&page_size=50&side=1&start_time=1761800000000&states=1%2C3\
-                &symbol=DOGE_USD
-                """)
-            #expect(orders == [.init(
-                id: .init(rawValue: "739114860879304259"), symbol: "DOGE_USD", side: .openLong, type: .limit,
-                marginMode: .isolated, leverage: 2,
-                trigger: .init(price: Decimal(string: "0.00001")!, condition: .atOrBelow, source: .last),
-                price: Decimal(string: "0.00001")!, volume: 1, state: .untriggered, lifetime: .seconds(87600 * 3600),
-                takeProfit: nil, stopLoss: nil, order: nil, errorCode: nil, positionMode: .hedge, reduceOnly: false,
-                triggerProtection: false, createdAt: Date(timeIntervalSince1970: 1_761_889_115),
-                updatedAt: Date(timeIntervalSince1970: 1_761_889_115)
-            )])
+            #expect(
+                sent.url.absoluteString == """
+                    https://api.mexc.com/api/v1/private/planorder/list/orders\
+                    ?end_time=1761900000000&page_num=2&page_size=50&side=1&start_time=1761800000000&states=1%2C3\
+                    &symbol=DOGE_USD
+                    """)
+            #expect(
+                orders == [
+                    .init(
+                        id: .init(rawValue: "739114860879304259"), symbol: "DOGE_USD", side: .openLong, type: .limit,
+                        marginMode: .isolated, leverage: 2,
+                        trigger: .init(price: Decimal(string: "0.00001")!, condition: .atOrBelow, source: .last),
+                        price: Decimal(string: "0.00001")!, volume: 1, state: .untriggered, lifetime: .seconds(87600 * 3600),
+                        takeProfit: nil, stopLoss: nil, order: nil, errorCode: nil, positionMode: .hedge, reduceOnly: false,
+                        triggerProtection: false, createdAt: Date(timeIntervalSince1970: 1_761_889_115),
+                        updatedAt: Date(timeIntervalSince1970: 1_761_889_115)
+                    )
+                ])
         }
 
         @Test func `the plan order list in any state`() async throws {
             let (_, sent) = try await call(fixture: "PlanOrder/list_orders") {
                 try await $0.list(from: Date(timeIntervalSince1970: 1), to: Date(timeIntervalSince1970: 2))
             }
-            #expect(sent.url.absoluteString == """
-                https://api.mexc.com/api/v1/private/planorder/list/orders\
-                ?end_time=2000&page_num=1&page_size=20&start_time=1000
-                """)
+            #expect(
+                sent.url.absoluteString == """
+                    https://api.mexc.com/api/v1/private/planorder/list/orders\
+                    ?end_time=2000&page_num=1&page_size=20&start_time=1000
+                    """)
         }
 
         @Test func `an executed plan order with attached stops and a failure code`() throws {

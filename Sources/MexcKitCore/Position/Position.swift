@@ -118,9 +118,11 @@ extension MexcFutures.Position: Decodable {
         frozenVolume = try container.decimal(forKey: .frozenVol)
         closedVolume = try container.decimal(forKey: .closeVol)
         // The `FullyScale` strings carry digits the plain numbers may round away.
-        averagePrice = try container.decimalIfPresent(forKey: .holdAvgPriceFullyScale)
+        averagePrice =
+            try container.decimalIfPresent(forKey: .holdAvgPriceFullyScale)
             ?? container.decimal(forKey: .holdAvgPrice)
-        averageOpenPrice = try container.decimalIfPresent(forKey: .openAvgPriceFullyScale)
+        averageOpenPrice =
+            try container.decimalIfPresent(forKey: .openAvgPriceFullyScale)
             ?? container.decimal(forKey: .openAvgPrice)
         averageClosePrice = try container.decimal(forKey: .closeAvgPrice)
         liquidationPrice = try container.decimalIfPresent(forKey: .liquidatePrice)

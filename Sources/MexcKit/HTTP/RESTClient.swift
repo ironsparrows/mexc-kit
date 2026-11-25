@@ -66,7 +66,8 @@ struct RESTClient: Sendable {
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true) else {
             preconditionFailure("Not a URL with components: \(baseURL)")
         }
-        let basePath = components.percentEncodedPath.hasSuffix("/")
+        let basePath =
+            components.percentEncodedPath.hasSuffix("/")
             ? String(components.percentEncodedPath.dropLast())
             : components.percentEncodedPath
         let segments = path.split(separator: "/", omittingEmptySubsequences: false).map { String($0).percentEncoded }

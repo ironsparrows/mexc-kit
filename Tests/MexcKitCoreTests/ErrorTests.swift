@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKitCore
 
 extension MexcKitCoreTests {
@@ -93,9 +94,15 @@ extension MexcKitCoreTests {
             (.closeVolumeTooLarge, "Insufficient number of positions can be closed"),
             (.leverageOutOfRange, "Leverage multiplier must be within the upper limit {max} and lower limit {min}"),
             (.marginReductionTooLarge, "Cannot exceed the maximum reducible margin {vol}"),
-            (.positionAboveRiskLimit, "Your current position amount is greater than the allowable amount of the new order. Please modify the risk limit and place the order again"),
+            (
+                .positionAboveRiskLimit,
+                "Your current position amount is greater than the allowable amount of the new order. Please modify the risk limit and place the order again"
+            ),
             (.riskLimitExceeded, "Current risk limit and maximum allowable number of positions exceeded, please adjust the risk limit"),
-            (.leverageTierLimitReached, "Position limit reached for your current leverage tier. See Risk Limits for the maximum position size for each tier."),
+            (
+                .leverageTierLimitReached,
+                "Position limit reached for your current leverage tier. See Risk Limits for the maximum position size for each tier."
+            ),
             (.invalidTriggerPriceSource, "Trigger order price type error"),
             (.invalidTriggerCondition, "Trigger order type error"),
             (.invalidTriggerPrice, "Trigger price error"),

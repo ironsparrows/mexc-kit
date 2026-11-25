@@ -18,13 +18,16 @@ struct AccountEndpoints: MexcFutures.AccountAPI {
         asset: String?, direction: MexcFutures.TransferDirection?, state: MexcFutures.TransferState?,
         page: MexcFutures.PageRequest
     ) async throws -> MexcFutures.Page<MexcFutures.Transfer> {
-        try await rest.send(.get("/api/v1/private/account/transfer_record", query: [
-            "currency": asset,
-            "type": direction?.rawValue,
-            "state": state?.rawValue,
-            "page_num": String(page.number),
-            "page_size": String(page.size),
-        ], authentication: .signed))
+        try await rest.send(
+            .get(
+                "/api/v1/private/account/transfer_record",
+                query: [
+                    "currency": asset,
+                    "type": direction?.rawValue,
+                    "state": state?.rawValue,
+                    "page_num": String(page.number),
+                    "page_size": String(page.size),
+                ], authentication: .signed))
     }
 
     func profitRate(_ period: MexcFutures.ProfitRatePeriod) async throws -> MexcFutures.ProfitRate {
@@ -47,10 +50,11 @@ struct AccountEndpoints: MexcFutures.AccountAPI {
     }
 
     func positionMode(subAccount: String) async throws -> MexcFutures.PositionMode {
-        let mode: SubaccountPositionMode = try await rest.send(.get(
-            "/api/v1/private/position/position_mode/subaccount", query: ["subAccount": subAccount],
-            authentication: .signed
-        ))
+        let mode: SubaccountPositionMode = try await rest.send(
+            .get(
+                "/api/v1/private/position/position_mode/subaccount", query: ["subAccount": subAccount],
+                authentication: .signed
+            ))
         return mode.positionMode
     }
 
@@ -67,9 +71,10 @@ struct AccountEndpoints: MexcFutures.AccountAPI {
     }
 
     func feeRates(_ symbol: MexcFutures.Symbol?) async throws -> MexcFutures.FeeRates {
-        try await rest.send(.get(
-            "/api/v1/private/account/tiered_fee_rate/v2", query: ["symbol": symbol?.rawValue], authentication: .signed
-        ))
+        try await rest.send(
+            .get(
+                "/api/v1/private/account/tiered_fee_rate/v2", query: ["symbol": symbol?.rawValue], authentication: .signed
+            ))
     }
 
     func feeTotals() async throws -> MexcFutures.FeeTotals {
@@ -93,15 +98,17 @@ struct AccountEndpoints: MexcFutures.AccountAPI {
         page: MexcFutures.PageRequest
     ) async throws -> [MexcFutures.FeeDeduction] {
         let deductions: ArrayOrPage<MexcFutures.FeeDeduction> = try await rest.send(
-            .get("/api/v1/private/order/fee_details", query: [
-                "symbol": symbol.rawValue,
-                // MEXC documents "up to 20" IDs but not the separator; commas are its list form elsewhere.
-                "ids": fills.isEmpty ? nil : fills.map(\.rawValue).joined(separator: ","),
-                "start_time": start.map { String($0.millisecondsSince1970) },
-                "end_time": end.map { String($0.millisecondsSince1970) },
-                "page_num": String(page.number),
-                "page_size": String(page.size),
-            ], authentication: .signed)
+            .get(
+                "/api/v1/private/order/fee_details",
+                query: [
+                    "symbol": symbol.rawValue,
+                    // MEXC documents "up to 20" IDs but not the separator; commas are its list form elsewhere.
+                    "ids": fills.isEmpty ? nil : fills.map(\.rawValue).joined(separator: ","),
+                    "start_time": start.map { String($0.millisecondsSince1970) },
+                    "end_time": end.map { String($0.millisecondsSince1970) },
+                    "page_num": String(page.number),
+                    "page_size": String(page.size),
+                ], authentication: .signed)
         )
         return deductions.items
     }

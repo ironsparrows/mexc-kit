@@ -16,11 +16,12 @@ extension MexcKitTests {
             _ = try await orders.closed("BTC_USDT")
             _ = try await orders.fills("BTC_USDT", page: .init(number: 3, size: 1000))
             try await orders.cancel(.init(rawValue: "7"))
-            #expect(await recorder.calls.value == [
-                "cancelAll nil", "pending 1 20", "history BTC_USDT 1,2,3,4,5 nil nil nil 1 20",
-                "history BTC_USDT 1,2,3,4,5 nil nil nil 2 100", "closed BTC_USDT nil nil 1 20",
-                "fills BTC_USDT nil nil 3 1000", "cancel 7",
-            ])
+            #expect(
+                await recorder.calls.value == [
+                    "cancelAll nil", "pending 1 20", "history BTC_USDT 1,2,3,4,5 nil nil nil 1 20",
+                    "history BTC_USDT 1,2,3,4,5 nil nil nil 2 100", "closed BTC_USDT nil nil 1 20",
+                    "fills BTC_USDT nil nil 3 1000", "cancel 7",
+                ])
         }
 
         @Test func `canceling one order throws the error reported for it`() async throws {

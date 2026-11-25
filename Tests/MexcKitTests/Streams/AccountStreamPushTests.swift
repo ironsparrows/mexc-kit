@@ -2,6 +2,7 @@ import Foundation
 import MexcKitProtobuf
 import SwiftProtobuf
 import Testing
+
 @testable import MexcKit
 
 extension MexcKitTests {
@@ -111,11 +112,13 @@ extension MexcKitTests {
 
         @Test func `an attached stops push decodes the order's take-profit and stop-loss`() async throws {
             let stops = try await first(of: streams.attachedStops(), push: .contractStopOrder(Self.attachedStops), on: "stop.order")
-            #expect(stops == MexcFutures.AttachedStopsUpdate(
-                order: MexcFutures.OrderID(rawValue: "123456789"), symbol: "BTC_USDT",
-                takeProfit: MexcFutures.AttachedStop(price: 48000, source: .fair),
-                stopLoss: MexcFutures.AttachedStop(price: 42000, source: .last)
-            ))
+            #expect(
+                stops
+                    == MexcFutures.AttachedStopsUpdate(
+                        order: MexcFutures.OrderID(rawValue: "123456789"), symbol: "BTC_USDT",
+                        takeProfit: MexcFutures.AttachedStop(price: 48000, source: .fair),
+                        stopLoss: MexcFutures.AttachedStop(price: 42000, source: .last)
+                    ))
         }
 
         @Test func `a trailing order push decodes into a trailing order`() async throws {
@@ -173,21 +176,26 @@ extension MexcKitTests {
 
         @Test func `a risk limit push decodes into the position's risk limit tier`() async throws {
             let limit = try await first(of: streams.riskLimits(), push: .contractUserRiskLimit(Self.riskLimit), on: "risk.limit")
-            #expect(limit == MexcFutures.PositionRiskLimit(
-                symbol: "BTC_USDT", side: .long, marginMode: .isolated,
-                limit: MexcFutures.Contract.RiskLimit(
-                    level: 2, maximumVolume: 500, maintenanceMarginRate: Decimal(string: "0.02")!,
-                    initialMarginRate: Decimal(string: "0.04")!, maximumLeverage: 50
-                )
-            ))
+            #expect(
+                limit
+                    == MexcFutures.PositionRiskLimit(
+                        symbol: "BTC_USDT", side: .long, marginMode: .isolated,
+                        limit: MexcFutures.Contract.RiskLimit(
+                            level: 2, maximumVolume: 500, maintenanceMarginRate: Decimal(string: "0.02")!,
+                            initialMarginRate: Decimal(string: "0.04")!, maximumLeverage: 50
+                        )
+                    ))
         }
 
         @Test func `a liquidation risk push decodes the position's liquidation price and margin ratio`() async throws {
-            let risk = try await first(of: streams.liquidationRisks(), push: .liquidateRiskChange(Self.liquidationRisk), on: "liquidate.risk")
-            #expect(risk == MexcFutures.LiquidationRisk(
-                symbol: "BTC_USDT", position: MexcFutures.PositionID(rawValue: "123456789"), liquidationPrice: 35000,
-                marginRatio: Decimal(string: "0.1")!, autoDeleveragingLevel: 3
-            ))
+            let risk = try await first(
+                of: streams.liquidationRisks(), push: .liquidateRiskChange(Self.liquidationRisk), on: "liquidate.risk")
+            #expect(
+                risk
+                    == MexcFutures.LiquidationRisk(
+                        symbol: "BTC_USDT", position: MexcFutures.PositionID(rawValue: "123456789"), liquidationPrice: 35000,
+                        marginRatio: Decimal(string: "0.1")!, autoDeleveragingLevel: 3
+                    ))
         }
 
         @Test func `a liquidation notice push decodes, and other notice types are skipped`() async throws {
@@ -197,12 +205,16 @@ extension MexcKitTests {
             other.type = 7
             other.param.notifyType = 0
             await server.send(.binary(try AccountStreamSupport.push("push.personal.generic.notify", .notifyGeneric(other))))
-            await server.send(.binary(try AccountStreamSupport.push("push.personal.generic.notify", .notifyGeneric(Self.liquidationNotice))))
+            await server.send(
+                .binary(try AccountStreamSupport.push("push.personal.generic.notify", .notifyGeneric(Self.liquidationNotice))))
 
-            #expect(try await notices.value == [MexcFutures.LiquidationNotice(
-                kind: .warning, marginMode: .isolated, marketName: "BTC_USDT PERPETUAL", isMultiAssetMode: false,
-                marginRatio: Decimal(string: "0.085")!
-            )])
+            #expect(
+                try await notices.value == [
+                    MexcFutures.LiquidationNotice(
+                        kind: .warning, marginMode: .isolated, marketName: "BTC_USDT PERPETUAL", isMultiAssetMode: false,
+                        marginRatio: Decimal(string: "0.085")!
+                    )
+                ])
         }
 
         @Test func `a liquidation risk of ADL level 0 has no level`() async throws {
@@ -243,10 +255,12 @@ extension MexcKitTests {
 
         @Test func `a trial bonus push decodes the bonus and its expiries`() async throws {
             let bonus = try await first(of: streams.trialBonuses(), push: .bonusNotify(Self.trialBonus), on: "bonus")
-            #expect(bonus == MexcFutures.TrialBonusUpdate(
-                asset: "USDT", amount: 100, expiresAt: Date(timeIntervalSince1970: 1_763_539_200), isGranted: true,
-                nearestExpiry: Date(timeIntervalSince1970: 1_763_539_200), nearestExpiringAmount: 100
-            ))
+            #expect(
+                bonus
+                    == MexcFutures.TrialBonusUpdate(
+                        asset: "USDT", amount: 100, expiresAt: Date(timeIntervalSince1970: 1_763_539_200), isGranted: true,
+                        nearestExpiry: Date(timeIntervalSince1970: 1_763_539_200), nearestExpiringAmount: 100
+                    ))
         }
 
         // MARK: Missing values
@@ -288,7 +302,8 @@ extension MexcKitTests {
                 bonus.clearC()
                 try await expectDecodingError(streams.trialBonuses(), push: .bonusNotify(bonus), on: "bonus")
             case .leverageMode:
-                try await expectDecodingError(streams.leverageModes(), push: .leverageMode(MexcKitProtobuf.LeverageMode()), on: "leverage.mode")
+                try await expectDecodingError(
+                    streams.leverageModes(), push: .leverageMode(MexcKitProtobuf.LeverageMode()), on: "leverage.mode")
             case .attachedStopsOrder:
                 var stops = Self.attachedStops
                 stops.orderID = ""

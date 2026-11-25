@@ -7,7 +7,8 @@ struct QueryString {
     let encoded: String
 
     init(_ parameters: [String: String]) {
-        encoded = parameters
+        encoded =
+            parameters
             .sorted { $0.key.utf8.lexicographicallyPrecedes($1.key.utf8) }
             .map { "\($0.key.percentEncoded)=\($0.value.percentEncoded)" }
             .joined(separator: "&")

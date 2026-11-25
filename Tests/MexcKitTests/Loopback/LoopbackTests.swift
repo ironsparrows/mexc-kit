@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 // Requests over real local HTTP through AsyncHTTPClient, so the bytes on the wire are checked, not
@@ -98,9 +99,10 @@ extension MexcKitTests {
             try await LoopbackServer.run(answering: .respond(status: 200, body: Self.success)) { server in
                 let client = MexcFutures.Client(credentials: Self.testCredentials, configuration: .init(restURL: server.url))
 
-                _ = try await client.rest.send(Endpoint<Bool>.post(
-                    "/api/v1/private/multiAssets/changeMultiAssetMode/true", .emptyForm
-                ))
+                _ = try await client.rest.send(
+                    Endpoint<Bool>.post(
+                        "/api/v1/private/multiAssets/changeMultiAssetMode/true", .emptyForm
+                    ))
 
                 let request = try #require(await server.requests.first { _ in true })
                 #expect(request.headers["Content-Type"] == "application/x-www-form-urlencoded")
@@ -113,18 +115,21 @@ extension MexcKitTests {
             try await LoopbackServer.run(answering: .respond(status: 200, body: Self.success)) { server in
                 let client = MexcFutures.Client(credentials: Self.testCredentials, configuration: .init(restURL: server.url))
 
-                _ = try await client.rest.send(Endpoint<Bool>.get(
-                    "/api/v1/private/order/batch_query", query: ["symbol": "BTC_USDT", "order_ids": "1,2"],
-                    authentication: .signed
-                ))
+                _ = try await client.rest.send(
+                    Endpoint<Bool>.get(
+                        "/api/v1/private/order/batch_query", query: ["symbol": "BTC_USDT", "order_ids": "1,2"],
+                        authentication: .signed
+                    ))
 
                 let request = try #require(await server.requests.first { _ in true })
                 #expect(request.uri == "/api/v1/private/order/batch_query?order_ids=1%2C2&symbol=BTC_USDT")
                 let requestTime = try #require(request.headers["Request-Time"])
                 let signer = RequestSigner(credentials: Self.testCredentials)
-                #expect(request.headers["Signature"] == signer.signature(
-                    requestTime: requestTime, parameters: "order_ids=1%2C2&symbol=BTC_USDT"
-                ))
+                #expect(
+                    request.headers["Signature"]
+                        == signer.signature(
+                            requestTime: requestTime, parameters: "order_ids=1%2C2&symbol=BTC_USDT"
+                        ))
             }
         }
 

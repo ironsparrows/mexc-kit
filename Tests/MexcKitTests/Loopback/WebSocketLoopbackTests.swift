@@ -1,6 +1,7 @@
 import Foundation
 import MexcKitTestSupport
 import Testing
+
 @testable import MexcKit
 
 extension MexcKitTests {

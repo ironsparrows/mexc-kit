@@ -24,10 +24,11 @@ extension MexcKitTests {
             try await stops.cancelAll(position: .init(rawValue: "9"))
             _ = try await stops.pending()
             _ = try await stops.list(page: .init(number: 2, size: 100))
-            #expect(await recorder.calls.value == [
-                "stop cancel 8", "stop cancelAll nil nil", "stop cancelAll BTC_USDT nil", "stop cancelAll nil 9", "stop pending nil",
-                "stop list nil nil nil 2 100",
-            ])
+            #expect(
+                await recorder.calls.value == [
+                    "stop cancel 8", "stop cancelAll nil nil", "stop cancelAll BTC_USDT nil", "stop cancelAll nil 9", "stop pending nil",
+                    "stop list nil nil nil 2 100",
+                ])
         }
 
         @Test func `the shorter trailing order call lists in any state`() async throws {

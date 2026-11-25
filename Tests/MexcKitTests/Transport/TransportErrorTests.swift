@@ -2,6 +2,7 @@ import AsyncHTTPClient
 import Foundation
 import NIOCore
 import Testing
+
 @testable import MexcKit
 
 extension MexcKitTests {
@@ -26,18 +27,20 @@ extension MexcKitTests {
             #expect(mapped.underlyingError as? HTTPClientError == error)
         }
 
-        @Test(arguments: [
-            IOError(errnoCode: 61, reason: "connect"), ChannelError.ioOnClosedChannel, ChannelError.eof,
-        ] as [any Error])
+        @Test(
+            arguments: [
+                IOError(errnoCode: 61, reason: "connect"), ChannelError.ioOnClosedChannel, ChannelError.eof,
+            ] as [any Error])
         func `NIO errors become connectionFailed`(error: any Error) throws {
             let mapped = try #require(AsyncHTTPClientTransport.clientError(for: error) as? MexcFutures.ClientError)
             #expect(mapped.reason == .connectionFailed)
         }
 
         #if canImport(Network)
-        @Test(arguments: [
-            HTTPClient.NWPOSIXError(.ENETDOWN, reason: "offline"), HTTPClient.NWTLSError(-9806, reason: "handshake"),
-        ] as [any Error])
+        @Test(
+            arguments: [
+                HTTPClient.NWPOSIXError(.ENETDOWN, reason: "offline"), HTTPClient.NWTLSError(-9806, reason: "handshake"),
+            ] as [any Error])
         func `Network framework errors become connectionFailed`(error: any Error) throws {
             let mapped = try #require(AsyncHTTPClientTransport.clientError(for: error) as? MexcFutures.ClientError)
             #expect(mapped.reason == .connectionFailed)

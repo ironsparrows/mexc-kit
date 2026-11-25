@@ -301,7 +301,8 @@ extension MexcFutures.StopOrder {
         )
         let stopLoss = try MexcFutures.AttachedStop.stream(price: stop.stopLossPrice, source: stop.lossTrend, "stopLossPrice")
         // Type 1 is a limit order at the order price, as in REST. The push has no take-profit type.
-        let stopLossLimitPrice = stop.stopLossType == 1
+        let stopLossLimitPrice =
+            stop.stopLossType == 1
             ? try Decimal.streamIfPresent(stop.stopLossOrderPrice, "stopLossOrderPrice") : nil
         self.init(
             id: MexcFutures.StopOrderID(rawValue: String(try requiredNonZero(stop.id, "id"))),

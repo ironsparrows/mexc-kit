@@ -36,10 +36,14 @@ extension MexcKitTests.LiveTrading {
         @Test func `self-trade prevention groups decode`() async throws {
             try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
                 _ = try await client.selfTradePrevention.groups()
-            } matching: { Self.isNotMarketMaker($0) }
+            } matching: {
+                Self.isNotMarketMaker($0)
+            }
             try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
                 _ = try await client.selfTradePrevention.currentGroup()
-            } matching: { Self.isNotMarketMaker($0) }
+            } matching: {
+                Self.isNotMarketMaker($0)
+            }
         }
 
         // The groups' changes need a market maker account and its sub-accounts' UIDs; other accounts get
@@ -49,10 +53,14 @@ extension MexcKitTests.LiveTrading {
             let name = "mexc-kit-live-test"
             try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
                 try await client.selfTradePrevention.create(name, members: ["1", "2"])
-            } matching: { Self.isNotMarketMaker($0) }
+            } matching: {
+                Self.isNotMarketMaker($0)
+            }
             try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
                 try await client.selfTradePrevention.update(name, members: ["1", "2", "3"])
-            } matching: { Self.isNotMarketMaker($0) }
+            } matching: {
+                Self.isNotMarketMaker($0)
+            }
             try await withKnownIssue("The group wasn't created, so there is none to delete", isIntermittent: true) {
                 try await client.selfTradePrevention.delete(name)
             } matching: { issue in
@@ -66,10 +74,14 @@ extension MexcKitTests.LiveTrading {
             let name = "mexc-kit-live-test"
             try await withKnownIssue("Needs a master key with this sub-account", isIntermittent: true) {
                 _ = try await client.position.leverage(Self.eth, subAccount: name)
-            } matching: { $0.error is MexcError }
+            } matching: {
+                $0.error is MexcError
+            }
             try await withKnownIssue("Needs a master key with this sub-account", isIntermittent: true) {
                 _ = try await client.account.positionMode(subAccount: name)
-            } matching: { $0.error is MexcError }
+            } matching: {
+                $0.error is MexcError
+            }
         }
 
         private static func isNotMarketMaker(_ issue: Issue) -> Bool {

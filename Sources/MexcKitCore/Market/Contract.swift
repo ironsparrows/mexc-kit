@@ -141,15 +141,16 @@ extension MexcFutures.Contract {
         guard step > 0 else { return value }
         var steps = value / step
         var rounded = Decimal()
-        let mode: NSDecimalNumber.RoundingMode = switch rule {
-        case .down: .down
-        case .up: .up
-        case .toNearestOrEven: .bankers
-        case .toNearestOrAwayFromZero: .plain
-        case .towardZero: steps < 0 ? .up : .down
-        case .awayFromZero: steps < 0 ? .down : .up
-        @unknown default: .bankers
-        }
+        let mode: NSDecimalNumber.RoundingMode =
+            switch rule {
+            case .down: .down
+            case .up: .up
+            case .toNearestOrEven: .bankers
+            case .toNearestOrAwayFromZero: .plain
+            case .towardZero: steps < 0 ? .up : .down
+            case .awayFromZero: steps < 0 ? .down : .up
+            @unknown default: .bankers
+            }
         NSDecimalRound(&rounded, &steps, 0, mode)
         return rounded * step
     }
@@ -194,12 +195,13 @@ extension MexcFutures.Contract: Decodable {
         initialMarginRate = try container.decimal(forKey: .initialMarginRate)
         maintenanceMarginRate = try container.decimal(forKey: .maintenanceMarginRate)
         riskLimits = try container.decodeIfPresent([RiskLimit].self, forKey: .riskLimitCustom) ?? []
-        marginModes = switch try container.decode(Int.self, forKey: .positionOpenType) {
-        case 1: [.isolated]
-        case 2: [.cross]
-        case 3: [.isolated, .cross]
-        default: []
-        }
+        marginModes =
+            switch try container.decode(Int.self, forKey: .positionOpenType) {
+            case 1: [.isolated]
+            case 2: [.cross]
+            case 3: [.isolated, .cross]
+            default: []
+            }
         state = try container.decode(State.self, forKey: .state)
         allowsAPITrading = try container.decode(Bool.self, forKey: .apiAllowed)
         indexSources = try container.decodeIfPresent([String].self, forKey: .indexOrigin) ?? []

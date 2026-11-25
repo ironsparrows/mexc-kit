@@ -1,6 +1,7 @@
 import Foundation
 import MexcKitTestSupport
 import Testing
+
 @testable import MexcKit
 
 /// Records every request and answers each with the next scripted response.

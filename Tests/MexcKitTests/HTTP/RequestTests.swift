@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 // Exact requests, with the test credentials `mx0testkey`/`testsecret` and the request time
@@ -8,28 +9,32 @@ extension MexcKitTests {
     @Suite("Requests")
     struct RequestTests {
         @Test func `a public GET carries no key or signature`() async throws {
-            let request = try await RESTClient.test().request(for: Endpoint<Bool>.get(
-                "/api/v1/contract/deals/BTC_USDT", query: ["limit": "100"]
-            ))
-            #expect(request.rendered == """
-                GET https://api.mexc.com/api/v1/contract/deals/BTC_USDT?limit=100
-                Content-Type: application/json
-                """)
+            let request = try await RESTClient.test().request(
+                for: Endpoint<Bool>.get(
+                    "/api/v1/contract/deals/BTC_USDT", query: ["limit": "100"]
+                ))
+            #expect(
+                request.rendered == """
+                    GET https://api.mexc.com/api/v1/contract/deals/BTC_USDT?limit=100
+                    Content-Type: application/json
+                    """)
         }
 
         @Test func `a signed GET signs the sorted query it sends`() async throws {
-            let request = try await RESTClient.test().request(for: Endpoint<Bool>.get(
-                "/api/v1/private/order/list/history_orders",
-                query: ["symbol": "BTC_USDT", "page_num": "1", "page_size": "20", "states": nil],
-                authentication: .signed
-            ))
-            #expect(request.rendered == """
-                GET https://api.mexc.com/api/v1/private/order/list/history_orders?page_num=1&page_size=20&symbol=BTC_USDT
-                Content-Type: application/json
-                ApiKey: mx0testkey
-                Request-Time: 1700000000000
-                Signature: 637fda6412263a9c9bde77885be3851375651d9ddc5a3828b8971851c0a156a0
-                """)
+            let request = try await RESTClient.test().request(
+                for: Endpoint<Bool>.get(
+                    "/api/v1/private/order/list/history_orders",
+                    query: ["symbol": "BTC_USDT", "page_num": "1", "page_size": "20", "states": nil],
+                    authentication: .signed
+                ))
+            #expect(
+                request.rendered == """
+                    GET https://api.mexc.com/api/v1/private/order/list/history_orders?page_num=1&page_size=20&symbol=BTC_USDT
+                    Content-Type: application/json
+                    ApiKey: mx0testkey
+                    Request-Time: 1700000000000
+                    Signature: 637fda6412263a9c9bde77885be3851375651d9ddc5a3828b8971851c0a156a0
+                    """)
         }
 
         @Test(arguments: [
@@ -39,10 +44,11 @@ extension MexcKitTests {
         func `a comma list is sent encoded and signed as chosen`(
             commaSigning: QueryString.CommaSigning, signature: String
         ) async throws {
-            let request = try await RESTClient.test().request(for: Endpoint<Bool>.get(
-                "/api/v1/private/order/batch_query", query: ["order_ids": "1,2,3"], authentication: .signed,
-                commaSigning: commaSigning
-            ))
+            let request = try await RESTClient.test().request(
+                for: Endpoint<Bool>.get(
+                    "/api/v1/private/order/batch_query", query: ["order_ids": "1,2,3"], authentication: .signed,
+                    commaSigning: commaSigning
+                ))
             #expect(request.url.absoluteString == "https://api.mexc.com/api/v1/private/order/batch_query?order_ids=1%2C2%2C3")
             #expect(request.headers.last == .init(name: "Signature", value: signature))
         }
@@ -53,58 +59,65 @@ extension MexcKitTests {
                 var price = Decimal(string: "60000.5")!
                 var vol = 1
             }
-            let request = try await RESTClient.test().request(for: Endpoint<Bool>.post(
-                "/api/v1/private/order/create", .json(Body())
-            ))
-            #expect(request.rendered == """
-                POST https://api.mexc.com/api/v1/private/order/create
-                Content-Type: application/json
-                ApiKey: mx0testkey
-                Request-Time: 1700000000000
-                Signature: b78bb2bba1b42e3b664677ecfa8e8052b997a6116632d613043db9c9da6801a6
+            let request = try await RESTClient.test().request(
+                for: Endpoint<Bool>.post(
+                    "/api/v1/private/order/create", .json(Body())
+                ))
+            #expect(
+                request.rendered == """
+                    POST https://api.mexc.com/api/v1/private/order/create
+                    Content-Type: application/json
+                    ApiKey: mx0testkey
+                    Request-Time: 1700000000000
+                    Signature: b78bb2bba1b42e3b664677ecfa8e8052b997a6116632d613043db9c9da6801a6
 
-                {"price":60000.5,"symbol":"BTC_USDT","vol":1}
-                """)
+                    {"price":60000.5,"symbol":"BTC_USDT","vol":1}
+                    """)
         }
 
         @Test func `a POST without parameters sends no body and signs the empty string`() async throws {
-            let request = try await RESTClient.test().request(for: Endpoint<Bool>.post(
-                "/api/v1/private/position/close_all"
-            ))
-            #expect(request.rendered == """
-                POST https://api.mexc.com/api/v1/private/position/close_all
-                Content-Type: application/json
-                ApiKey: mx0testkey
-                Request-Time: 1700000000000
-                Signature: 714a5b3c4e04c2cb808c224fe8f77bbbec89c8014d52eee3d9b064004ca0e9f9
-                """)
+            let request = try await RESTClient.test().request(
+                for: Endpoint<Bool>.post(
+                    "/api/v1/private/position/close_all"
+                ))
+            #expect(
+                request.rendered == """
+                    POST https://api.mexc.com/api/v1/private/position/close_all
+                    Content-Type: application/json
+                    ApiKey: mx0testkey
+                    Request-Time: 1700000000000
+                    Signature: 714a5b3c4e04c2cb808c224fe8f77bbbec89c8014d52eee3d9b064004ca0e9f9
+                    """)
         }
 
         @Test func `an empty form POST is form-encoded and signs the empty string`() async throws {
-            let request = try await RESTClient.test().request(for: Endpoint<Bool>.post(
-                "/api/v1/private/multiAssets/changeMultiAssetMode/true", .emptyForm
-            ))
-            #expect(request.rendered == """
-                POST https://api.mexc.com/api/v1/private/multiAssets/changeMultiAssetMode/true
-                Content-Type: application/x-www-form-urlencoded
-                ApiKey: mx0testkey
-                Request-Time: 1700000000000
-                Signature: 714a5b3c4e04c2cb808c224fe8f77bbbec89c8014d52eee3d9b064004ca0e9f9
-                """)
+            let request = try await RESTClient.test().request(
+                for: Endpoint<Bool>.post(
+                    "/api/v1/private/multiAssets/changeMultiAssetMode/true", .emptyForm
+                ))
+            #expect(
+                request.rendered == """
+                    POST https://api.mexc.com/api/v1/private/multiAssets/changeMultiAssetMode/true
+                    Content-Type: application/x-www-form-urlencoded
+                    ApiKey: mx0testkey
+                    Request-Time: 1700000000000
+                    Signature: 714a5b3c4e04c2cb808c224fe8f77bbbec89c8014d52eee3d9b064004ca0e9f9
+                    """)
         }
 
         @Test func `the receive window and language are sent when configured`() async throws {
             let client = RESTClient.test(receiveWindow: .seconds(5), language: "en-US")
             let request = try await client.request(for: Endpoint<Bool>.post("/api/v1/private/position/close_all"))
-            #expect(request.rendered == """
-                POST https://api.mexc.com/api/v1/private/position/close_all
-                Content-Type: application/json
-                Language: en-US
-                ApiKey: mx0testkey
-                Request-Time: 1700000000000
-                Signature: 714a5b3c4e04c2cb808c224fe8f77bbbec89c8014d52eee3d9b064004ca0e9f9
-                Recv-Window: 5000
-                """)
+            #expect(
+                request.rendered == """
+                    POST https://api.mexc.com/api/v1/private/position/close_all
+                    Content-Type: application/json
+                    Language: en-US
+                    ApiKey: mx0testkey
+                    Request-Time: 1700000000000
+                    Signature: 714a5b3c4e04c2cb808c224fe8f77bbbec89c8014d52eee3d9b064004ca0e9f9
+                    Recv-Window: 5000
+                    """)
         }
 
         @Test func `a private request without credentials throws before sending`() async throws {

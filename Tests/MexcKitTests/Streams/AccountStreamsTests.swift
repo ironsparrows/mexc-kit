@@ -2,6 +2,7 @@ import Foundation
 import MexcKitProtobuf
 import SwiftProtobuf
 import Testing
+
 @testable import MexcKit
 
 extension MexcKitTests {
@@ -35,13 +36,17 @@ extension MexcKitTests {
             let ether = streams.orders(["ETH_USDT"])
             #expect(await server.nextSent() == AccountStreamSupport.filter(#"{"filter":"order","rules":["BTC_USDT","ETH_USDT"]}"#))
             let positions = streams.positions()
-            #expect(await server.nextSent() == AccountStreamSupport.filter(
-                #"{"filter":"order","rules":["BTC_USDT","ETH_USDT"]},{"filter":"position"}"#
-            ))
+            #expect(
+                await server.nextSent()
+                    == AccountStreamSupport.filter(
+                        #"{"filter":"order","rules":["BTC_USDT","ETH_USDT"]},{"filter":"position"}"#
+                    ))
             let balances = streams.balances()
-            #expect(await server.nextSent() == AccountStreamSupport.filter(
-                #"{"filter":"asset"},{"filter":"order","rules":["BTC_USDT","ETH_USDT"]},{"filter":"position"}"#
-            ))
+            #expect(
+                await server.nextSent()
+                    == AccountStreamSupport.filter(
+                        #"{"filter":"asset"},{"filter":"order","rules":["BTC_USDT","ETH_USDT"]},{"filter":"position"}"#
+                    ))
             withExtendedLifetime((bitcoin, ether, positions, balances)) {}
         }
 
@@ -242,7 +247,9 @@ extension MexcKitTests {
         // MARK: Pushes
 
         @Test func `an order push decodes into an order without attached stops`() async throws {
-            let order = try await first(of: Streams.test(server, account: AccountStreamSupport.account).orders(), push: .orderChange(Self.order), on: "push.personal.order")
+            let order = try await first(
+                of: Streams.test(server, account: AccountStreamSupport.account).orders(), push: .orderChange(Self.order),
+                on: "push.personal.order")
             #expect(order.id.rawValue == "123456789")
             #expect(order.symbol == "BTC_USDT")
             #expect(order.position?.rawValue == "987654321")
@@ -273,7 +280,9 @@ extension MexcKitTests {
         }
 
         @Test func `a fill push decodes into a fill`() async throws {
-            let fill = try await first(of: Streams.test(server, account: AccountStreamSupport.account).fills(), push: .orderDealDetail(Self.fill), on: "push.personal.order.deal")
+            let fill = try await first(
+                of: Streams.test(server, account: AccountStreamSupport.account).fills(), push: .orderDealDetail(Self.fill),
+                on: "push.personal.order.deal")
             #expect(fill.id.rawValue == "987654321")
             #expect(fill.symbol == "BTC_USDT")
             #expect(fill.order?.rawValue == "123456789")
@@ -290,7 +299,9 @@ extension MexcKitTests {
         }
 
         @Test func `a position push decodes into a position`() async throws {
-            let position = try await first(of: Streams.test(server, account: AccountStreamSupport.account).positions(), push: .positionChange(Self.position), on: "push.personal.position")
+            let position = try await first(
+                of: Streams.test(server, account: AccountStreamSupport.account).positions(), push: .positionChange(Self.position),
+                on: "push.personal.position")
             #expect(position.id.rawValue == "123456789")
             #expect(position.symbol == "BTC_USDT")
             #expect(position.side == .long)
@@ -320,10 +331,14 @@ extension MexcKitTests {
         }
 
         @Test func `a balance push decodes its asset and amounts`() async throws {
-            let balance = try await first(of: Streams.test(server, account: AccountStreamSupport.account).balances(), push: .assetChange(Self.balance), on: "push.personal.asset")
-            #expect(balance == MexcFutures.BalanceUpdate(
-                asset: "USDT", available: 9000, frozen: 1000, positionMargin: 5000, trialBonus: 100
-            ))
+            let balance = try await first(
+                of: Streams.test(server, account: AccountStreamSupport.account).balances(), push: .assetChange(Self.balance),
+                on: "push.personal.asset")
+            #expect(
+                balance
+                    == MexcFutures.BalanceUpdate(
+                        asset: "USDT", available: 9000, frozen: 1000, positionMargin: 5000, trialBonus: 100
+                    ))
         }
 
         @Test func `an order's zero position and fill price are none, and its best price is kept`() async throws {
@@ -332,7 +347,8 @@ extension MexcKitTests {
             order.dealAvgPrice = "0"
             order.bboTypeNum = 2
             let decoded = try await first(
-                of: Streams.test(server, account: AccountStreamSupport.account).orders(), push: .orderChange(order), on: "push.personal.order"
+                of: Streams.test(server, account: AccountStreamSupport.account).orders(), push: .orderChange(order),
+                on: "push.personal.order"
             )
             #expect(decoded.position == nil)
             #expect(decoded.averageFillPrice == nil)

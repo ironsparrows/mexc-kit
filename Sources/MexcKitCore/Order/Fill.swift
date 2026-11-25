@@ -70,7 +70,8 @@ extension MexcFutures.Fill: Decodable {
         category = try container.decodeIfPresent(MexcFutures.OrderCategory.self, forKey: .category)
             .flatMap { $0.rawValue == 0 ? nil : $0 }
         // The examples send `taker`; the field tables name it `isTaker`.
-        isTaker = try container.decodeIfPresent(Bool.self, forKey: .taker)
+        isTaker =
+            try container.decodeIfPresent(Bool.self, forKey: .taker)
             ?? container.decodeIfPresent(Bool.self, forKey: .isTaker)
         positionMode = try container.decodeIfPresent(MexcFutures.PositionMode.self, forKey: .positionMode)
             .flatMap { $0.rawValue == 0 ? nil : $0 }

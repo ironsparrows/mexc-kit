@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 // Private responses can't be recorded without the user's key, so each call runs against the example
@@ -13,27 +14,31 @@ extension MexcKitTests {
         @Test func `open positions decode at full precision`() async throws {
             let (positions, url) = try await call(fixture: "Position/open_positions") { try await $0.list() }
             #expect(url == "https://api.mexc.com/api/v1/private/position/open_positions")
-            #expect(positions == [.init(
-                id: .init(rawValue: "1109973831"), symbol: "BTC_USDT", side: .long, marginMode: .isolated,
-                state: .holding, leverage: 2, volume: 5, frozenVolume: 0, closedVolume: 0,
-                averagePrice: Decimal(string: "109777.5")!, averageOpenPrice: Decimal(string: "109777.5")!,
-                averageClosePrice: 0, liquidationPrice: Decimal(string: "55020.5")!,
-                initialMargin: Decimal(string: "27.444375")!, originalInitialMargin: Decimal(string: "27.444375")!,
-                funding: 0, realizedProfit: 0, addsMarginAutomatically: false,
-                unrealizedProfit: Decimal(string: "-0.0039")!, closingProfit: 0, profitRatio: 0,
-                marginRatio: Decimal(string: "0.0027")!, fee: 0, totalFee: 0, autoDeleveragingLevel: nil,
-                createdAt: Date(timeIntervalSince1970: 1_761_887_133.854),
-                updatedAt: Date(timeIntervalSince1970: 1_761_887_133.854)
-            )])
+            #expect(
+                positions == [
+                    .init(
+                        id: .init(rawValue: "1109973831"), symbol: "BTC_USDT", side: .long, marginMode: .isolated,
+                        state: .holding, leverage: 2, volume: 5, frozenVolume: 0, closedVolume: 0,
+                        averagePrice: Decimal(string: "109777.5")!, averageOpenPrice: Decimal(string: "109777.5")!,
+                        averageClosePrice: 0, liquidationPrice: Decimal(string: "55020.5")!,
+                        initialMargin: Decimal(string: "27.444375")!, originalInitialMargin: Decimal(string: "27.444375")!,
+                        funding: 0, realizedProfit: 0, addsMarginAutomatically: false,
+                        unrealizedProfit: Decimal(string: "-0.0039")!, closingProfit: 0, profitRatio: 0,
+                        marginRatio: Decimal(string: "0.0027")!, fee: 0, totalFee: 0, autoDeleveragingLevel: nil,
+                        createdAt: Date(timeIntervalSince1970: 1_761_887_133.854),
+                        updatedAt: Date(timeIntervalSince1970: 1_761_887_133.854)
+                    )
+                ])
         }
 
         @Test func `open positions filtered by symbol and ID`() async throws {
             let (_, url) = try await call(fixture: "Position/open_positions") {
                 try await $0.list("BTC_USDT", position: .init(rawValue: "1109973831"))
             }
-            #expect(url == """
-                https://api.mexc.com/api/v1/private/position/open_positions?positionId=1109973831&symbol=BTC_USDT
-                """)
+            #expect(
+                url == """
+                    https://api.mexc.com/api/v1/private/position/open_positions?positionId=1109973831&symbol=BTC_USDT
+                    """)
         }
 
         @Test func `the full-precision price wins over the plain number`() throws {
@@ -63,11 +68,12 @@ extension MexcKitTests {
             let (positions, url) = try await call(fixture: "Position/history_positions") {
                 try await $0.history("BTC_USDT", side: .long, start: start, end: end, page: .init(number: 3, size: 100))
             }
-            #expect(url == """
-                https://api.mexc.com/api/v1/private/position/list/history_positions\
-                ?end_time=1758000000000&page_num=3&page_size=100&position_type=1&start_time=1754000000500\
-                &symbol=BTC_USDT
-                """)
+            #expect(
+                url == """
+                    https://api.mexc.com/api/v1/private/position/list/history_positions\
+                    ?end_time=1758000000000&page_num=3&page_size=100&position_type=1&start_time=1754000000500\
+                    &symbol=BTC_USDT
+                    """)
             #expect(positions.map(\.id.rawValue) == ["1027177055", "980739233"])
             #expect(positions.allSatisfy { $0.state == .closed && $0.volume == 0 && $0.marginRatio == nil })
             #expect(positions[0].averageClosePrice == Decimal(string: "113572.3"))
@@ -110,16 +116,20 @@ extension MexcKitTests {
                     start: Date(timeIntervalSince1970: 1), end: Date(timeIntervalSince1970: 2), page: .first
                 )
             }
-            #expect(url == """
-                https://api.mexc.com/api/v1/private/position/funding_records\
-                ?end_time=2000&page_num=1&page_size=20&position_id=1109973831&position_type=2&start_time=1000\
-                &symbol=BTC_USDT
-                """)
-            #expect(page.items == [.init(
-                id: "5537", symbol: "BTC_USDT", side: .short, positionValue: Decimal(string: "109.7775")!,
-                amount: Decimal(string: "-0.0010977")!, rate: Decimal(string: "0.00001")!,
-                settledAt: Date(timeIntervalSince1970: 1_761_897_600)
-            )])
+            #expect(
+                url == """
+                    https://api.mexc.com/api/v1/private/position/funding_records\
+                    ?end_time=2000&page_num=1&page_size=20&position_id=1109973831&position_type=2&start_time=1000\
+                    &symbol=BTC_USDT
+                    """)
+            #expect(
+                page.items == [
+                    .init(
+                        id: "5537", symbol: "BTC_USDT", side: .short, positionValue: Decimal(string: "109.7775")!,
+                        amount: Decimal(string: "-0.0010977")!, rate: Decimal(string: "0.00001")!,
+                        settledAt: Date(timeIntervalSince1970: 1_761_897_600)
+                    )
+                ])
         }
 
         @Test func `funding payments without filters`() async throws {
@@ -132,12 +142,14 @@ extension MexcKitTests {
         @Test func `leverage of each side`() async throws {
             let (settings, url) = try await call(fixture: "Position/leverage") { try await $0.leverage("BTC_USDT") }
             #expect(url == "https://api.mexc.com/api/v1/private/position/leverage?symbol=BTC_USDT")
-            #expect(settings == [MexcFutures.PositionSide.long, .short].map { side in
-                .init(
-                    side: side, marginMode: .isolated, leverage: 2, maximumLeverage: 500,
-                    maintenanceMarginRate: Decimal(string: "0.001")!
-                )
-            })
+            #expect(
+                settings
+                    == [MexcFutures.PositionSide.long, .short].map { side in
+                        .init(
+                            side: side, marginMode: .isolated, leverage: 2, maximumLeverage: 500,
+                            maintenanceMarginRate: Decimal(string: "0.001")!
+                        )
+                    })
         }
 
         @Test func `reversing a position sends its ID as a number`() async throws {
@@ -166,9 +178,10 @@ extension MexcKitTests {
             let (settings, url) = try await call(fixture: "Position/leverage_subaccount") {
                 try await $0.leverage("BTC_USDT", subAccount: "mexc_sub_01")
             }
-            #expect(url == """
-                https://api.mexc.com/api/v1/private/position/leverage/subaccount?subAccount=mexc_sub_01&symbol=BTC_USDT
-                """)
+            #expect(
+                url == """
+                    https://api.mexc.com/api/v1/private/position/leverage/subaccount?subAccount=mexc_sub_01&symbol=BTC_USDT
+                    """)
             #expect(settings.map(\.side) == [.long, .short])
         }
 
@@ -184,8 +197,10 @@ extension MexcKitTests {
             #expect(sent.bodyText == #"{"leverage":15,"openType":2,"positionType":2,"symbol":"BTC_USDT"}"#)
         }
 
-        @Test(arguments: [(Decimal(string: "2.5")!, #"{"amount":2.5,"positionId":7,"type":"ADD"}"#),
-                          (Decimal(string: "-1.25")!, #"{"amount":1.25,"positionId":7,"type":"SUB"}"#)])
+        @Test(arguments: [
+            (Decimal(string: "2.5")!, #"{"amount":2.5,"positionId":7,"type":"ADD"}"#),
+            (Decimal(string: "-1.25")!, #"{"amount":1.25,"positionId":7,"type":"SUB"}"#),
+        ])
         func `adjusting margin sends the size and the direction`(change: Decimal, body: String) async throws {
             let sent = try await post { try await $0.adjustMargin(of: .init(rawValue: "7"), by: change) }
             #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/position/change_margin")

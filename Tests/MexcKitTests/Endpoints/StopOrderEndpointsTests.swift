@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MexcKit
 
 // Private responses can't be recorded without the user's key. The pending list runs against the example
@@ -23,10 +24,11 @@ extension MexcKitTests {
             #expect(id == .init(rawValue: "357859177"))
             #expect(sent.method == .post)
             #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/stoporder/place")
-            #expect(sent.bodyText == """
-                {"lossTrend":1,"positionId":1027177055,"priceProtect":1,"profitTrend":2,"stopLossOrderPrice":57900,\
-                "stopLossPrice":58000,"stopLossType":1,"takeProfitPrice":64000,"vol":2}
-                """)
+            #expect(
+                sent.bodyText == """
+                    {"lossTrend":1,"positionId":1027177055,"priceProtect":1,"profitTrend":2,"stopLossOrderPrice":57900,\
+                    "stopLossPrice":58000,"stopLossType":1,"takeProfitPrice":64000,"vol":2}
+                    """)
         }
 
         @Test func `a stop order with only a stop-loss sends both trigger types`() async throws {
@@ -67,9 +69,10 @@ extension MexcKitTests {
                 try await $0.setAttachedStops(of: order, takeProfit: .init(price: 64000), stopLoss: .init(price: 58000))
             }
             #expect(set.url.absoluteString == "https://api.mexc.com/api/v1/private/stoporder/change_price")
-            #expect(set.bodyText == """
-                {"lossTrend":1,"orderId":739113577038255616,"profitTrend":1,"stopLossPrice":58000,"takeProfitPrice":64000}
-                """)
+            #expect(
+                set.bodyText == """
+                    {"lossTrend":1,"orderId":739113577038255616,"profitTrend":1,"stopLossPrice":58000,"takeProfitPrice":64000}
+                    """)
             let (_, removed) = try await call(json: Self.accepted) {
                 try await $0.setAttachedStops(of: order, takeProfit: nil, stopLoss: nil)
             }
@@ -101,14 +104,17 @@ extension MexcKitTests {
             let (orders, sent) = try await call(fixture: "StopOrder/open_orders") { try await $0.pending("BTC_USDT") }
             #expect(sent.method == .get)
             #expect(sent.url.absoluteString == "https://api.mexc.com/api/v1/private/stoporder/open_orders?symbol=BTC_USDT")
-            #expect(orders == [.init(
-                id: .init(rawValue: "357859177"), symbol: "BTC_USDT", position: Self.position, side: .long,
-                order: .init(rawValue: "720733527158642176"), takeProfit: .market(at: Decimal(string: "113573.9")!),
-                stopLoss: .market(at: 111_325), volume: 2, state: .executed, isFinished: true, triggered: .stopLoss,
-                placedVolume: 2, placedOrder: .init(rawValue: "720744238723187712"), errorCode: nil,
-                triggerProtection: false, createdAt: Date(timeIntervalSince1970: 1_757_506_663),
-                updatedAt: Date(timeIntervalSince1970: 1_757_509_217)
-            )])
+            #expect(
+                orders == [
+                    .init(
+                        id: .init(rawValue: "357859177"), symbol: "BTC_USDT", position: Self.position, side: .long,
+                        order: .init(rawValue: "720733527158642176"), takeProfit: .market(at: Decimal(string: "113573.9")!),
+                        stopLoss: .market(at: 111_325), volume: 2, state: .executed, isFinished: true, triggered: .stopLoss,
+                        placedVolume: 2, placedOrder: .init(rawValue: "720744238723187712"), errorCode: nil,
+                        triggerProtection: false, createdAt: Date(timeIntervalSince1970: 1_757_506_663),
+                        updatedAt: Date(timeIntervalSince1970: 1_757_509_217)
+                    )
+                ])
         }
 
         @Test func `the stop order list with every filter`() async throws {
@@ -125,10 +131,11 @@ extension MexcKitTests {
                     end: Date(timeIntervalSince1970: 2), page: .first
                 )
             }
-            #expect(sent.url.absoluteString == """
-                https://api.mexc.com/api/v1/private/stoporder/list/orders\
-                ?end_time=2000&page_num=1&page_size=20&start_time=1000&state=1&symbol=BTC_USDT&type=2
-                """)
+            #expect(
+                sent.url.absoluteString == """
+                    https://api.mexc.com/api/v1/private/stoporder/list/orders\
+                    ?end_time=2000&page_num=1&page_size=20&start_time=1000&state=1&symbol=BTC_USDT&type=2
+                    """)
             let order = try #require(orders.first)
             #expect(order.order == nil)
             #expect(order.position == nil)

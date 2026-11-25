@@ -12,7 +12,8 @@ extension MexcKitCoreTests {
         func `opening and closing pick MEXC's order side`(
             direction: MexcFutures.OrderRequest.Direction, opening: MexcFutures.OrderSide, closing: MexcFutures.OrderSide
         ) {
-            #expect(MexcFutures.OrderRequest.open(direction, "BTC_USDT", .market, volume: 1, leverage: 5, marginMode: .cross).side == opening)
+            #expect(
+                MexcFutures.OrderRequest.open(direction, "BTC_USDT", .market, volume: 1, leverage: 5, marginMode: .cross).side == opening)
             #expect(MexcFutures.OrderRequest.close(direction, "BTC_USDT", .market, volume: 1, marginMode: .cross).side == closing)
         }
 

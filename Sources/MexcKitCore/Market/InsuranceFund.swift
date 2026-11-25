@@ -32,7 +32,8 @@ extension MexcFutures.InsuranceFund: Decodable {
         symbol = try container.decode(MexcFutures.Symbol.self, forKey: .symbol)
         asset = try container.decode(String.self, forKey: .currency)
         balance = try container.decimal(forKey: .available)
-        time = try container.contains(.snapshotTime)
+        time =
+            try container.contains(.snapshotTime)
             ? container.millisecondDate(forKey: .snapshotTime)
             : container.millisecondDate(forKey: .timestamp)
     }

@@ -42,9 +42,10 @@ struct StopOrderEndpoints: MexcFutures.StopOrderAPI {
     }
 
     func pending(_ symbol: MexcFutures.Symbol?) async throws -> [MexcFutures.StopOrder] {
-        try await rest.send(.get(
-            "/api/v1/private/stoporder/open_orders", query: ["symbol": symbol?.rawValue], authentication: .signed
-        ))
+        try await rest.send(
+            .get(
+                "/api/v1/private/stoporder/open_orders", query: ["symbol": symbol?.rawValue], authentication: .signed
+            ))
     }
 
     func list(
@@ -52,15 +53,17 @@ struct StopOrderEndpoints: MexcFutures.StopOrderAPI {
         start: Date?, end: Date?, page: MexcFutures.PageRequest
     ) async throws -> [MexcFutures.StopOrder] {
         let orders: ArrayOrPage<MexcFutures.StopOrder> = try await rest.send(
-            .get("/api/v1/private/stoporder/list/orders", query: [
-                "symbol": symbol?.rawValue,
-                "state": state.map { String($0.rawValue) },
-                "type": side.map { String($0.rawValue) },
-                "start_time": start.map { String($0.millisecondsSince1970) },
-                "end_time": end.map { String($0.millisecondsSince1970) },
-                "page_num": String(page.number),
-                "page_size": String(page.size),
-            ], authentication: .signed)
+            .get(
+                "/api/v1/private/stoporder/list/orders",
+                query: [
+                    "symbol": symbol?.rawValue,
+                    "state": state.map { String($0.rawValue) },
+                    "type": side.map { String($0.rawValue) },
+                    "start_time": start.map { String($0.millisecondsSince1970) },
+                    "end_time": end.map { String($0.millisecondsSince1970) },
+                    "page_num": String(page.number),
+                    "page_size": String(page.size),
+                ], authentication: .signed)
         )
         return orders.items
     }

@@ -15,11 +15,12 @@ extension MexcKitTests {
             _ = try await positions.history("BTC_USDT", page: .init(number: 2, size: 100))
             _ = try await positions.fundingPayments()
             _ = try await positions.fundingPayments("BTC_USDT", page: .init(number: 2, size: 100))
-            #expect(await recorder.calls.value == [
-                "list nil nil", "list BTC_USDT nil", "history nil nil nil nil 1 20",
-                "history BTC_USDT nil nil nil 2 100", "fundingPayments nil nil nil nil nil 1 20",
-                "fundingPayments BTC_USDT nil nil nil nil 2 100",
-            ])
+            #expect(
+                await recorder.calls.value == [
+                    "list nil nil", "list BTC_USDT nil", "history nil nil nil nil 1 20",
+                    "history BTC_USDT nil nil nil 2 100", "fundingPayments nil nil nil nil nil 1 20",
+                    "fundingPayments BTC_USDT nil nil nil nil 2 100",
+                ])
         }
     }
 }

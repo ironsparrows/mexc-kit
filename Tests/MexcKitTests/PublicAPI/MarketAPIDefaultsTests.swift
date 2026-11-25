@@ -16,10 +16,11 @@ extension MexcKitTests {
             _ = try await market.deals("BTC_USDT")
             _ = try await market.fundingRateHistory("BTC_USDT")
             _ = try await market.insuranceFundHistory("BTC_USDT")
-            #expect(await recorder.calls.value == [
-                "orderBook nil", "candles nil nil last", "candles nil nil fair", "candles set set last", "deals nil",
-                "fundingRateHistory 1 20", "insuranceFundHistory 1 20",
-            ])
+            #expect(
+                await recorder.calls.value == [
+                    "orderBook nil", "candles nil nil last", "candles nil nil fair", "candles set set last", "deals nil",
+                    "fundingRateHistory 1 20", "insuranceFundHistory 1 20",
+                ])
         }
     }
 }
