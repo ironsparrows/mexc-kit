@@ -4,8 +4,9 @@ import Testing
 
 // Changes the ETH_USDT short leverage and sets it back: the order suites trade BTC_USDC longs, and with
 // no position there, MEXC takes the market, side and margin mode. Reads the position mode and the
-// self-trade prevention groups without changing them; the groups need a market maker account, and
-// other accounts' noPermission answer is a known issue.
+// self-trade prevention groups, then creates, changes and deletes one; the groups need a market maker
+// account, and other accounts' noPermission answer is a known issue. Reads a sub-account's settings,
+// which need a master key and its sub-account; MEXC's refusal is a known issue.
 extension LiveTrading {
     @Suite(
         "Live position settings and self-trade prevention", .tags(.live),
@@ -39,6 +40,33 @@ extension LiveTrading {
             try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
                 _ = try await client.selfTradePrevention.currentGroup()
             } matching: { Self.isNotMarketMaker($0) }
+        }
+
+        // The groups' changes need a market maker account and its sub-accounts' UIDs; other accounts get
+        // noPermission (511), which is a known issue here.
+        @Test func `self-trade prevention groups are created, changed and deleted`() async throws {
+            let name = "mexc-kit-live-test"
+            try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
+                try await client.selfTradePrevention.create(name, members: ["1", "2"])
+            } matching: { Self.isNotMarketMaker($0) }
+            try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
+                try await client.selfTradePrevention.update(name, members: ["1", "2", "3"])
+            } matching: { Self.isNotMarketMaker($0) }
+            try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
+                try await client.selfTradePrevention.delete(name)
+            } matching: { Self.isNotMarketMaker($0) }
+        }
+
+        // The sub-account reads need a master key and one of its sub-accounts; MEXC refuses a name that
+        // isn't one, which is a known issue here. The request is signed and answered either way.
+        @Test func `sub-account settings are read`() async throws {
+            let name = "mexc-kit-live-test"
+            try await withKnownIssue("Needs a master key with this sub-account", isIntermittent: true) {
+                _ = try await client.position.leverage(Self.eth, subAccount: name)
+            } matching: { $0.error is MexcError }
+            try await withKnownIssue("Needs a master key with this sub-account", isIntermittent: true) {
+                _ = try await client.account.positionMode(subAccount: name)
+            } matching: { $0.error is MexcError }
         }
 
         private static func isNotMarketMaker(_ issue: Issue) -> Bool {
