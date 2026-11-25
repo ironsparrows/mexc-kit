@@ -2,7 +2,7 @@ import MexcKit
 import MexcKitTestSupport
 import Testing
 
-// Changes the ETH_USDT short leverage and sets it back: the order suites trade BTC_USDT longs, and with
+// Changes the ETH_USDT short leverage and sets it back: the order suites trade BTC_USDC longs, and with
 // no position there, MEXC takes the market, side and margin mode. Reads the position mode and the
 // self-trade prevention groups without changing them; the groups need a market maker account, and
 // other accounts' noPermission answer is a known issue.

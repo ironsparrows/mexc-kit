@@ -3,7 +3,7 @@ import MexcKit
 import MexcKitTestSupport
 import Testing
 
-// Places small real orders: opens the smallest long in BTC_USDT and closes it, while the order,
+// Places small real orders: opens the smallest long in BTC_USDC and closes it, while the order,
 // position, fill and balance streams are open, and checks their pushes decode. Then, on another such
 // long, places and cancels a stop order, a trailing order, a plan order and a limit order with
 // attached stops, as the live plan, stop and trailing order suite does, while their streams are open.
@@ -13,7 +13,7 @@ extension LiveTrading {
         .enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run"), .timeLimit(.minutes(2))
     )
     struct LiveAccountStreamTests {
-        private static let btc: MexcFutures.Symbol = "BTC_USDT"
+        private static let btc: MexcFutures.Symbol = "BTC_USDC"
         private let client = MexcFutures.Client(credentials: LiveTestSettings.credentials)
 
         @Test func `orders, fills, positions and balances stream while a position opens and closes`() async throws {

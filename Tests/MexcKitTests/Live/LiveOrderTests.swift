@@ -3,7 +3,7 @@ import MexcKit
 import MexcKitTestSupport
 import Testing
 
-// Places small real orders: opens the smallest long in BTC_USDT and closes it, and rests a post-only buy
+// Places small real orders: opens the smallest long in BTC_USDC and closes it, and rests a post-only buy
 // 5% below the market, inside MEXC's price band, then changes and cancels it. Each test changes things
 // first and reads afterwards, so a read that fails to decode leaves nothing open.
 extension LiveTrading {
@@ -12,7 +12,7 @@ extension LiveTrading {
         .timeLimit(.minutes(2))
     )
     struct LiveOrderTests {
-        private static let btc: MexcFutures.Symbol = "BTC_USDT"
+        private static let btc: MexcFutures.Symbol = "BTC_USDC"
         private let client = MexcFutures.Client(credentials: LiveTestSettings.credentials)
 
         @Test func `a position opens and closes, and every order read decodes`() async throws {

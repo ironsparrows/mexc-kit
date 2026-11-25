@@ -3,7 +3,7 @@ import MexcKit
 import MexcKitTestSupport
 import Testing
 
-// Places small real orders: opens the smallest long in BTC_USDT, puts a stop-loss 10% below the market
+// Places small real orders: opens the smallest long in BTC_USDC, puts a stop-loss 10% below the market
 // and a trailing close that activates only 50% above it on the position, places a plan order that
 // triggers only 50% above the market, cancels all three and closes the position. It changes things first
 // and reads afterwards, so a read that fails to decode leaves nothing open; the pending stop orders are
@@ -14,7 +14,7 @@ extension LiveTrading {
         .enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run"), .timeLimit(.minutes(2))
     )
     struct LiveConditionalOrderTests {
-        private static let btc: MexcFutures.Symbol = "BTC_USDT"
+        private static let btc: MexcFutures.Symbol = "BTC_USDC"
         private let client = MexcFutures.Client(credentials: LiveTestSettings.credentials)
 
         @Test func `each kind is placed and canceled, and every read decodes`() async throws {
