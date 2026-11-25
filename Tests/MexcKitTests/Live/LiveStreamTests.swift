@@ -34,8 +34,10 @@ extension MexcKitTests {
             async let changes = Self.values(5, of: stream.orderBookChanges(Self.btc))
             async let book = Self.first(of: stream.orderBooks(Self.btc, limit: 5))
             async let grouped = Self.first(of: stream.orderBooks(Self.btc, step: 10))
+            // Usually one more each; MEXC's documentation allows gaps, as packet loss, which the local order
+            // book recovers from. Increasing is what every change promises.
             let versions = try await changes.map(\.version)
-            #expect(zip(versions, versions.dropFirst()).allSatisfy { $1 == $0 + 1 })
+            #expect(zip(versions, versions.dropFirst()).allSatisfy { $1 > $0 }, "versions: \(versions)")
             #expect(try await book.asks.count == 5)
             #expect(try await grouped.bids.isEmpty == false)
         }

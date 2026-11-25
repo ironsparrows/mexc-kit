@@ -62,7 +62,7 @@ extension MexcFutures {
         ///
         /// A level's volume is its new total, and a volume of 0 removes it. Each change's
         /// ``OrderBook/Change/version`` is one more than the previous one's; a gap means changes were
-        /// lost, such as during a reconnect. Every change reaches a consumer that falls behind.
+        /// lost, during a reconnect or on MEXC's side, which happens now and then. Every change reaches a consumer that falls behind.
         /// ``OrderBookSync`` keeps a whole book from these changes.
         func orderBookChanges(_ symbol: Symbol) -> AsyncThrowingStream<OrderBook.Change, any Error>
 
