@@ -15,7 +15,8 @@ extension MexcFutures {
         public let id: TrailingOrderID
         public let symbol: Symbol
         public let side: OrderSide
-        public let marginMode: MarginMode
+        /// `nil` when MEXC leaves it out or sends 0, as it does for a trailing order that closes a position.
+        public let marginMode: MarginMode?
         public let leverage: Int
         public let volume: Decimal
         /// The price MEXC follows.
@@ -39,7 +40,7 @@ extension MexcFutures {
         public let updatedAt: Date?
 
         public init(
-            id: TrailingOrderID, symbol: Symbol, side: OrderSide, marginMode: MarginMode, leverage: Int,
+            id: TrailingOrderID, symbol: Symbol, side: OrderSide, marginMode: MarginMode?, leverage: Int,
             volume: Decimal, source: PriceSource, callback: Callback, activationPrice: Decimal?,
             referencePrice: Decimal?, triggerPrice: Decimal?, triggerCondition: TriggerCondition?,
             state: TrailingOrderState, order: OrderID?, errorCode: MexcError.Code?, positionMode: PositionMode?,
@@ -114,7 +115,8 @@ extension MexcFutures.TrailingOrder: Decodable {
         id = try container.decode(MexcFutures.TrailingOrderID.self, forKey: .id)
         symbol = try container.decode(MexcFutures.Symbol.self, forKey: .symbol)
         side = try container.decode(MexcFutures.OrderSide.self, forKey: .side)
-        marginMode = try container.decode(MexcFutures.MarginMode.self, forKey: .openType)
+        marginMode = try container.decodeIfPresent(MexcFutures.MarginMode.self, forKey: .openType)
+            .flatMap { $0.rawValue == 0 ? nil : $0 }
         leverage = try container.decode(Int.self, forKey: .leverage)
         volume = try container.decimal(forKey: .vol)
         source = try container.decode(MexcFutures.PriceSource.self, forKey: .trend)

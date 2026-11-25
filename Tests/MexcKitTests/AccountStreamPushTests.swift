@@ -145,7 +145,10 @@ struct AccountStreamPushTests {
         trailing.state = 0
         trailing.clearOrderID()
         trailing.clearMarkPrice()
+        // A live closing trailing order was pushed without `openType`.
+        trailing.clearOpenType()
         let decoded = try await first(of: streams.trailingOrders(), push: .contractTrackOrder(trailing), on: "track.order")
+        #expect(decoded.marginMode == nil)
         #expect(decoded.state == .inactive)
         #expect(decoded.order == nil)
         #expect(decoded.referencePrice == nil)
