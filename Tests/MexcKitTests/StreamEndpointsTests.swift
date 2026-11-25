@@ -7,7 +7,7 @@ import Testing
 @Suite("Stream endpoints", .timeLimit(.minutes(1)))
 struct StreamEndpointsTests {
     private let server = FakeWebSocketServer()
-    private var streams: StreamEndpoints { .test(server) }
+    private var streams: Streams { .test(server) }
 
     @Test func `a ticker decodes from its push`() async throws {
         let ticker = try await first(
@@ -173,15 +173,15 @@ struct StreamEndpointsTests {
     }
 }
 
-extension StreamEndpoints {
+extension Streams {
     /// Streams over `server` with ``StreamConnection/Timing/test`` waits.
     static func test(
         _ server: FakeWebSocketServer, account: StreamConnection.Account? = nil, timing: StreamConnection.Timing = .test
-    ) -> StreamEndpoints {
+    ) -> Streams {
         let url = URL(string: "wss://contract.mexc.com/edge?Trans-Protocol=Protobuf")!
-        return StreamEndpoints(
-            connection: StreamConnection(url: url, transport: server, timing: timing),
-            accountConnection: StreamConnection(url: url, transport: server, account: account, timing: timing)
+        return Streams(
+            market: MarketStreams(connection: StreamConnection(url: url, transport: server, timing: timing)),
+            account: AccountStreams(connection: StreamConnection(url: url, transport: server, account: account, timing: timing))
         )
     }
 }

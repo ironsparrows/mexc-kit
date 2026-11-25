@@ -36,7 +36,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `a route's last stream ending unsubscribes while other routes stay open`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let prices = streams.indexPrice("BTC_USDT")
         var ticker: AsyncThrowingStream<MexcFutures.Ticker, any Error>? = streams.ticker("BTC_USDT")
         try await acknowledge(2)
@@ -79,7 +79,7 @@ struct StreamConnectionTests {
     // MARK: Requests
 
     @Test func `a request waits for the previous one's acknowledgement`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let ticker = streams.ticker("BTC_USDT")
         let prices = streams.fairPrice("BTC_USDT")
         let firstRequest = await server.nextSent()
@@ -96,7 +96,7 @@ struct StreamConnectionTests {
 
     @Test func `an acknowledgement that arrives while the request is still being sent counts`() async throws {
         await server.acknowledgeAtOnce()
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         _ = await server.nextSent()
         try await server.push("push.ticker.BTC_USDT")
@@ -105,7 +105,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `candles of two intervals on one market go to their own streams`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let fiveMinutes = Task { try await Self.take(1, from: streams.candles("BTC_USDT", interval: .fiveMinutes)) }
         let oneMinute = Task { try await Self.take(1, from: streams.candles("BTC_USDT", interval: .oneMinute)) }
         try await acknowledge(2)
@@ -120,7 +120,7 @@ struct StreamConnectionTests {
     // MARK: Failures
 
     @Test func `a rejected subscription throws subscriptionRejected with MEXC's message`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let ticker = Task { try await Self.take(1, from: streams.ticker("NOPE_USDT")) }
         _ = await server.nextSent()
         await server.send(#"{"channel":"rs.error","data":"Contract [NOPE_USDT] not exists","ts":1}"#)
@@ -131,7 +131,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `an unacknowledged subscription throws acknowledgementTimedOut, and the connection starts over`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         try await acknowledge(1)
         let prices = Task { try await Self.take(1, from: streams.indexPrice("BTC_USDT")) }
@@ -149,7 +149,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `an acknowledgement that isn't success rejects the subscription`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         _ = await server.nextSent()
         await server.send(#"{"channel":"rs.sub.ticker","data":"failed","ts":1}"#)
@@ -173,7 +173,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `order books grouped by another step on an open market throw invalidRequest naming both`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tenths = streams.orderBooks("DOGE_USDT", step: Decimal(string: "0.1")!)
         _ = await server.nextSent()
         let hundredths = Task { try await Self.take(1, from: streams.orderBooks("DOGE_USDT", step: Decimal(string: "0.01")!)) }
@@ -185,7 +185,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `unmerged deals while merged ones are open throw invalidRequest`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let merged = streams.deals("ETH_USDT", merged: true)
         _ = await server.nextSent()
         let unmerged = Task { try await Self.take(1, from: streams.deals("ETH_USDT", merged: false)) }
@@ -198,7 +198,7 @@ struct StreamConnectionTests {
 
     @Test func `a failed first connection throws connectionFailed`() async throws {
         await server.failConnections(1)
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let ticker = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
 
         let error = try await #require(throws: MexcFutures.ClientError.self) { try await ticker.value }
@@ -208,7 +208,7 @@ struct StreamConnectionTests {
     // MARK: Reconnecting
 
     @Test func `after a drop the connection reconnects and subscribes again to every route`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tickers = Task { try await Self.take(2, from: streams.ticker("BTC_USDT")) }
         let prices = Task { try await Self.take(2, from: streams.indexPrice("BTC_USDT")) }
         try await acknowledge(2)
@@ -228,7 +228,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `a drop while a request waits for its acknowledgement sends it again`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         #expect(await server.nextSent() == Self.ticker.subscribeRequest)
 
@@ -240,7 +240,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `a drop right after an acknowledgement still subscribes again`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         #expect(await server.nextSent() == Self.ticker.subscribeRequest)
 
@@ -253,7 +253,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `a stream started while reconnecting fails when connecting fails, and acknowledged ones wait`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         try await acknowledge(1)
 
@@ -279,7 +279,7 @@ struct StreamConnectionTests {
     @Test func `the connection sends a ping each interval`() async throws {
         var timing = StreamConnection.Timing.test
         timing.pingInterval = .milliseconds(20)
-        let streams = StreamEndpoints.test(server, timing: timing)
+        let streams = Streams.test(server, timing: timing)
         let ticker = streams.ticker("BTC_USDT")
         #expect(await server.nextSent() == Self.ticker.subscribeRequest)
         await server.acknowledge("ticker")
@@ -292,7 +292,7 @@ struct StreamConnectionTests {
     // MARK: Pushes
 
     @Test func `pushes the client can't read or route are skipped`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let tickers = Task { try await Self.take(1, from: streams.ticker("BTC_USDT")) }
         try await acknowledge(1)
         let otherMarket = ContractWrapper.with {
@@ -309,7 +309,7 @@ struct StreamConnectionTests {
     }
 
     @Test func `a push whose values don't decode ends the stream with DecodingError`() async throws {
-        let streams = StreamEndpoints.test(server)
+        let streams = Streams.test(server)
         let prices = Task { try await Self.take(1, from: streams.fairPrice("BTC_USDT")) }
         try await acknowledge(1)
         let push = ContractWrapper.with {

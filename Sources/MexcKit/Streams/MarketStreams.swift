@@ -1,25 +1,24 @@
 import Foundation
 import MexcKitProtobuf
 
-/// The live ``MexcFutures/StreamAPI``: the market streams here, and the account streams, over the
-/// logged-in ``accountConnection``, in an extension of their own.
-struct StreamEndpoints: MexcFutures.StreamAPI {
+/// The market streams of ``Streams``, on the public connection.
+struct MarketStreams {
     /// The connection of the market streams.
     let connection: StreamConnection
-    /// The logged-in connection of the account streams.
-    let accountConnection: StreamConnection
 
-    // MARK: - Endpoints
+    // MARK: - Streams
 
     func ticker(_ symbol: MexcFutures.Symbol) -> AsyncThrowingStream<MexcFutures.Ticker, any Error> {
-        stream(StreamSubscription(name: "\(symbol) tickers", channel: "ticker", symbol: symbol), buffering: .bufferingNewest(1)) { push in
+        let subscription = StreamSubscription(name: "\(symbol) tickers", channel: "ticker", symbol: symbol)
+        return connection.stream(subscription, buffering: .bufferingNewest(1)) { push in
             guard case .tickerDetail(let ticker) = push.data else { return [] }
             return [try MexcFutures.Ticker(ticker)]
         }
     }
 
     func tickers() -> AsyncThrowingStream<[MexcFutures.TickerSummary], any Error> {
-        stream(StreamSubscription(name: "the tickers of every market", channel: "tickers"), buffering: .bufferingNewest(1)) { push in
+        let subscription = StreamSubscription(name: "the tickers of every market", channel: "tickers")
+        return connection.stream(subscription, buffering: .bufferingNewest(1)) { push in
             guard case .tickerList(let list) = push.data else { return [] }
             return [try list.ticker.map(MexcFutures.TickerSummary.init)]
         }
@@ -31,7 +30,7 @@ struct StreamEndpoints: MexcFutures.StreamAPI {
             name: "\(symbol) \(merged ? "merged" : "unmerged") deals", channel: "deal", symbol: symbol,
             parameters: merged ? [:] : ["reduce": .bool(false)]
         )
-        return stream(subscription, buffering: .unbounded) { push in
+        return connection.stream(subscription, buffering: .unbounded) { push in
             switch push.data {
             case .deal(let deal): [try MexcFutures.Deal(deal)]
             case .deals(let deals): try deals.deals.map(MexcFutures.Deal.init)
@@ -43,7 +42,8 @@ struct StreamEndpoints: MexcFutures.StreamAPI {
     func orderBookChanges(
         _ symbol: MexcFutures.Symbol
     ) -> AsyncThrowingStream<MexcFutures.OrderBook.Change, any Error> {
-        stream(StreamSubscription(name: "\(symbol) order book changes", channel: "depth", symbol: symbol), buffering: .unbounded) { push in
+        let subscription = StreamSubscription(name: "\(symbol) order book changes", channel: "depth", symbol: symbol)
+        return connection.stream(subscription, buffering: .unbounded) { push in
             guard case .depthInfo(let depth) = push.data else { return [] }
             return [try MexcFutures.OrderBook.Change(depth, time: depth.cts != 0 ? depth.cts : push.ts)]
         }
@@ -59,7 +59,7 @@ struct StreamEndpoints: MexcFutures.StreamAPI {
             name: "\(symbol) order books of \(limit) levels", channel: "depth.full", symbol: symbol,
             parameters: ["limit": .int(limit)]
         )
-        return stream(subscription, buffering: .bufferingNewest(1)) { push in
+        return connection.stream(subscription, buffering: .bufferingNewest(1)) { push in
             guard case .depthInfo(let depth) = push.data else { return [] }
             let time = depth.cts != 0 ? depth.cts : push.ts
             return [try MexcFutures.OrderBook(asks: depth.asks, bids: depth.bids, version: depth.version, time: time)]
@@ -73,7 +73,7 @@ struct StreamEndpoints: MexcFutures.StreamAPI {
             name: "\(symbol) order books grouped by step \(step)", channel: "depth.step", symbol: symbol,
             parameters: ["step": .string(step.description)]
         )
-        return stream(subscription, buffering: .bufferingNewest(1)) { push in
+        return connection.stream(subscription, buffering: .bufferingNewest(1)) { push in
             guard case .depthStepInfo(let depth) = push.data else { return [] }
             let time = depth.hasCt && depth.ct != 0 ? depth.ct : push.ts
             return [try MexcFutures.OrderBook(asks: depth.asks, bids: depth.bids, version: depth.version, time: time)]
@@ -87,62 +87,26 @@ struct StreamEndpoints: MexcFutures.StreamAPI {
             name: "\(symbol) \(interval.rawValue) candles", channel: "kline", symbol: symbol,
             parameters: ["interval": .string(interval.rawValue)], variant: interval.rawValue
         )
-        return stream(subscription, buffering: .bufferingNewest(1)) { push in
+        return connection.stream(subscription, buffering: .bufferingNewest(1)) { push in
             guard case .wsKline(let candle) = push.data else { return [] }
             return [try MexcFutures.Candle(candle)]
         }
     }
 
     func indexPrice(_ symbol: MexcFutures.Symbol) -> AsyncThrowingStream<MexcFutures.PriceSnapshot, any Error> {
-        stream(StreamSubscription(name: "\(symbol) index prices", channel: "index.price", symbol: symbol), buffering: .bufferingNewest(1)) { push in
+        let subscription = StreamSubscription(name: "\(symbol) index prices", channel: "index.price", symbol: symbol)
+        return connection.stream(subscription, buffering: .bufferingNewest(1)) { push in
             guard case .indexPrice(let price) = push.data else { return [] }
             return [try MexcFutures.PriceSnapshot(symbol: price.symbol, price: price.price, time: push.ts)]
         }
     }
 
     func fairPrice(_ symbol: MexcFutures.Symbol) -> AsyncThrowingStream<MexcFutures.PriceSnapshot, any Error> {
-        stream(StreamSubscription(name: "\(symbol) fair prices", channel: "fair.price", symbol: symbol), buffering: .bufferingNewest(1)) { push in
+        let subscription = StreamSubscription(name: "\(symbol) fair prices", channel: "fair.price", symbol: symbol)
+        return connection.stream(subscription, buffering: .bufferingNewest(1)) { push in
             guard case .fairPrice(let price) = push.data else { return [] }
             return [try MexcFutures.PriceSnapshot(symbol: price.symbol, price: price.price, time: push.ts)]
         }
-    }
-
-    /// A stream of the values `elements` reads from each push of `subscription`.
-    ///
-    /// Making the stream subscribes; ending it, by cancelling the iterating task or releasing the
-    /// stream, unsubscribes. A push whose values don't decode ends the stream with a `DecodingError`.
-    func stream<Element: Sendable>(
-        _ subscription: StreamSubscription, on connection: StreamConnection? = nil, markets: Set<MexcFutures.Symbol> = [],
-        buffering: AsyncThrowingStream<Element, any Error>.Continuation.BufferingPolicy,
-        elements: @escaping @Sendable (ContractWrapper) throws -> [Element]
-    ) -> AsyncThrowingStream<Element, any Error> {
-        let connection = connection ?? self.connection
-        let (stream, continuation) = AsyncThrowingStream.makeStream(of: Element.self, bufferingPolicy: buffering)
-        let id = UUID()
-        let consumer = StreamConnection.Consumer(
-            markets: markets,
-            receive: { push in
-                do {
-                    for element in try elements(push) {
-                        continuation.yield(element)
-                    }
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            },
-            fail: { continuation.finish(throwing: $0) }
-        )
-        let subscribing = Task { [connection] in
-            await connection.subscribe(subscription, id: id, consumer: consumer)
-        }
-        continuation.onTermination = { [connection] _ in
-            // After the subscription is in place, so the removal can't arrive first.
-            Task {
-                await subscribing.value
-                await connection.unsubscribe(id: id, from: subscription.route)
-            }
-        }
-        return stream
     }
 }
 

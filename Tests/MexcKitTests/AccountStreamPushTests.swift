@@ -14,7 +14,7 @@ import Testing
 @Suite("Account stream pushes", .timeLimit(.minutes(1)))
 struct AccountStreamPushTests {
     private let server: FakeWebSocketServer
-    private let streams: StreamEndpoints
+    private let streams: Streams
 
     init() {
         server = FakeWebSocketServer()

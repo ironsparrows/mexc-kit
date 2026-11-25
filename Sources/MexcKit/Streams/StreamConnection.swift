@@ -230,6 +230,43 @@ actor StreamConnection {
 
     // MARK: - Subscribing
 
+    /// A stream of the values `elements` reads from each push of `subscription` on this connection.
+    ///
+    /// Making the stream subscribes; ending it, by cancelling the iterating task or releasing the
+    /// stream, unsubscribes. A push whose values don't decode ends the stream with a `DecodingError`.
+    nonisolated func stream<Element: Sendable>(
+        _ subscription: StreamSubscription, markets: Set<MexcFutures.Symbol> = [],
+        buffering: AsyncThrowingStream<Element, any Error>.Continuation.BufferingPolicy,
+        elements: @escaping @Sendable (ContractWrapper) throws -> [Element]
+    ) -> AsyncThrowingStream<Element, any Error> {
+        let (stream, continuation) = AsyncThrowingStream.makeStream(of: Element.self, bufferingPolicy: buffering)
+        let id = UUID()
+        let consumer = Consumer(
+            markets: markets,
+            receive: { push in
+                do {
+                    for element in try elements(push) {
+                        continuation.yield(element)
+                    }
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            },
+            fail: { continuation.finish(throwing: $0) }
+        )
+        let subscribing = Task {
+            await self.subscribe(subscription, id: id, consumer: consumer)
+        }
+        continuation.onTermination = { _ in
+            // After the subscription is in place, so the removal can't arrive first.
+            Task {
+                await subscribing.value
+                await self.unsubscribe(id: id, from: subscription.route)
+            }
+        }
+        return stream
+    }
+
     /// Adds `consumer` to the route of `subscription`, and subscribes when it's the route's first.
     ///
     /// Returns before MEXC acknowledges; a failure reaches ``Consumer/fail``. A second subscription

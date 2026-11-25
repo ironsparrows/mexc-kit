@@ -61,11 +61,15 @@ extension MexcFutures {
             stopOrder = StopOrderEndpoints(rest: rest)
             trailingOrder = TrailingOrderEndpoints(rest: rest)
             selfTradePrevention = SelfTradePreventionEndpoints(rest: rest)
-            stream = StreamEndpoints(
-                connection: StreamConnection(url: configuration.streamURL, transport: webSocketTransport),
-                accountConnection: StreamConnection(
-                    url: configuration.streamURL, transport: webSocketTransport,
-                    account: StreamConnection.Account(credentials: credentials, clock: clock)
+            stream = Streams(
+                market: MarketStreams(
+                    connection: StreamConnection(url: configuration.streamURL, transport: webSocketTransport)
+                ),
+                account: AccountStreams(
+                    connection: StreamConnection(
+                        url: configuration.streamURL, transport: webSocketTransport,
+                        account: StreamConnection.Account(credentials: credentials, clock: clock)
+                    )
                 )
             )
         }

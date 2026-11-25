@@ -1,7 +1,7 @@
 import Foundation
 import MexcKitProtobuf
 
-/// The account streams of ``StreamEndpoints``, on its logged-in connection.
+/// The account streams of ``Streams``, on the logged-in connection.
 ///
 /// MEXC's `personal.filter` names nine of the account's channels, from orders to risk limits. While
 /// only streams of those are open, the connection asks for just their channels and markets. MEXC's
@@ -9,8 +9,11 @@ import MexcKitProtobuf
 /// liquidation risk, are pushed while a filter is in place, so while a stream of one of them is open,
 /// the connection sends an empty filter, which MEXC documents as restoring its pushes, and each
 /// stream drops what isn't its own.
-extension StreamEndpoints {
-    // MARK: - Endpoints
+struct AccountStreams {
+    /// The logged-in connection of the account streams.
+    let connection: StreamConnection
+
+    // MARK: - Streams
 
     func orders(_ symbols: Set<MexcFutures.Symbol>) -> AsyncThrowingStream<MexcFutures.Order, any Error> {
         accountStream("orders", channel: "order", filterKey: "order", markets: symbols) { push in
@@ -142,7 +145,7 @@ extension StreamEndpoints {
         let subscription = StreamSubscription(
             name: "the account's \(name)", channel: "personal.\(channel)", filter: filterKey
         )
-        return stream(subscription, on: accountConnection, markets: markets, buffering: .unbounded) { push in
+        return connection.stream(subscription, markets: markets, buffering: .unbounded) { push in
             guard let (market, read) = value(push) else { return [] }
             if let market, !markets.isEmpty, !markets.contains(MexcFutures.Symbol(rawValue: market)) { return [] }
             return [try read()]
