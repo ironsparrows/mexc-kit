@@ -13,7 +13,7 @@ Your app
 
 - Dependencies point one way: app, `MexcKit`, `MexcKitCore` or `MexcKitProtobuf`, platform.
 - `MexcKitCore` depends only on Foundation. It is a product so a module that needs only the contract (protocols and models, for mocking or dependency injection) doesn't compile NIO or BoringSSL.
-- `MexcKit` depends on AsyncHTTPClient (REST), SwiftNIO (the byte, header and time types AsyncHTTPClient's API takes), WebSocketKit (streams), SwiftProtobuf (reading the streams' pushes) and swift-crypto (HMAC request signing; it wraps CryptoKit on Apple platforms). None of their types appears in a public signature: `import MexcKit` is all an app writes. Only the transport conformers import AsyncHTTPClient, SwiftNIO and WebSocketKit.
+- `MexcKit` depends on AsyncHTTPClient (REST), SwiftNIO (the byte, header and time types AsyncHTTPClient's API takes), WebSocketKit (streams), SwiftProtobuf (reading the streams' pushes) and swift-crypto (HMAC request signing; it wraps CryptoKit on Apple platforms). None of their types appears in a public signature: `import MexcKit` is all an app writes. Only the transport conformers, in `Transport/`, import AsyncHTTPClient, SwiftNIO and WebSocketKit.
 - `MexcKitProtobuf` holds the Swift that swift-protobuf generates from MEXC's `.proto` files, checked in so an app's build compiles plain Swift and runs no build plugin. It depends only on swift-protobuf's runtime, at least the version that generated the code. MEXC's messages have no Protobuf package, so they get bare names such as `Deal` and `Contract`; with `package` access they never reach an app or a public signature, which uses the `MexcFutures` models instead. Its `README.md` records the source commit and the regeneration command.
 - Every API type is nested in `MexcFutures`, so names like `Order` or `Position` can't collide with an app's types or another exchange SDK. Only `MexcError` and `MexcCredentials` sit at the top level, where a future spot module can share them.
 
@@ -40,11 +40,22 @@ Import `Foundation` with a plain `import Foundation`, not `FoundationEssentials`
 
 ## Folders and files
 
-- In `MexcKitCore` and `MexcKit`, a file with no `public` declaration goes in `Internal/`, so a module's root shows what apps can use.
-- A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them. A type split across files for size keeps its main file and names each other `Type+Part.swift`, such as `StreamEndpoints+Account.swift`.
+- `MexcKitCore`'s root holds the namespace, `API`, and what three or more domains share: the errors, credentials, identifiers, `Page` and the vocabularies. Each property of `MexcFutures.API` has a folder named after it in UpperCamelCase (`client.planOrder`, `PlanOrder/`), holding its domain protocol and the models and request values its methods return or take. `Stream/` holds `StreamAPI` and the models only a stream pushes; a model a REST method also returns stays in that domain's folder. A file with no `public` declaration goes in `Internal/`.
+- `MexcKit`'s root holds only the files with `public` declarations, `Client.swift` and `Exports.swift`, and the rest is grouped by mechanism:
+
+  | Folder | Holds |
+  |---|---|
+  | `Endpoints/` | One conformer per REST domain, named `<Domain>Endpoints`, and the helpers only they use |
+  | `Streams/` | `Streams`, the `StreamAPI` conformer, which forwards to `MarketStreams` and `AccountStreams`; the connection, its subscriptions and the readers of a push's values |
+  | `HTTP/` | Sending one request: the REST client, its envelope and query encoding |
+  | `Signing/` | The request signer and the server clock it signs with |
+  | `Transport/` | The transport protocols and their conformers, the only files that import AsyncHTTPClient, SwiftNIO and WebSocketKit |
+
+- A file owns one responsibility and is named after its primary type. Wire types live, `private`, in the file that reads or writes them. There are no `Type+Topic.swift` files: a type that seems to need a second file has a second responsibility, which becomes a type of its own, as `MarketStreams` and `AccountStreams` are.
 - `MexcKitProtobuf` is upstream code: `Proto/` holds MEXC's files unmodified and `Generated/` holds generated Swift, never edited by hand. The folder, file, mark, comment, access and vocabulary rules here don't apply to either.
-- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitProtobufTests` for decoding binary frames (recorded from MEXC, except one built to carry an unknown push type), `MexcKitTests` for the client. `MexcKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`) and the `.live` tag. In `MexcKitTests`, `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, `Support/` holds fakes and helpers, and `Fixtures/` holds responses recorded from MEXC, byte for byte except for replaced IDs; its `Stream/` frames are copies of `MexcKitProtobufTests`' fixtures, since resources don't cross test targets, so change both together. Private endpoints' fixtures are the examples in MEXC's documentation until a response is recorded with a key; their test suites say so.
-- `MexcKit.docc` holds the documentation's landing page and articles; `MexcKitCore.docc` holds the landing page of `MexcKitCore` alone. The code of their examples and the README's lives in `Tests/MexcKitTests/DocumentationExamples.swift`, compiled but never run; `DocumentationExampleTests` checks each example matches it.
+- Tests mirror the sources: `MexcKitCoreTests` for the contract, `MexcKitProtobufTests` for decoding binary frames (recorded from MEXC, except one built to carry an unknown push type), `MexcKitTests` for the client, each with its source target's folders. Each test target has a root suite in a file named after it, such as `MexcKitTests.swift`, and every other file nests its suite in it. In `MexcKitTests`, `PublicAPI/` holds what an app sees (the public surface, the protocols' defaults and the documentation's examples), `Loopback/` sends real requests to a local server, `Live/` calls MEXC's servers, and `Support/` holds fakes and helpers.
+- `MexcKitTestSupport` (in `Tests/`, not a product) holds the live test gate (`areLiveTestsEnabled`, `LiveTestSettings`), the `.live` tag and `Fixtures/`: responses and pushes recorded from MEXC, byte for byte except for replaced IDs, in a folder per domain (`Market/ticker.json`) and binary frames in `Stream/`. Tests read them through `Fixture.response(_:)` and `Fixture.push(_:)`. Private endpoints' fixtures are the examples in MEXC's documentation until a response is recorded with a key; their test suites say so.
+- `MexcKit.docc` holds the documentation's landing page and articles; `MexcKitCore.docc` holds the landing page of `MexcKitCore` alone. The code of their examples and the README's lives in `Tests/MexcKitTests/PublicAPI/DocumentationExamples.swift`, compiled but never run; `DocumentationExampleTests` checks each example matches it.
 
 Files of one kind use the same `// MARK: -` sections in the same order; a section that doesn't apply is left out:
 
@@ -54,6 +65,7 @@ Files of one kind use the same `// MARK: -` sections in the same order; a sectio
 | A model | Model · Reading · Wire, with each nested type in Model or in a section of its own before Wire |
 | A request value | Model · one section per nested type |
 | A domain conformer | Endpoints · Wire |
+| The market or account streams | Streams · Wire |
 | The stream connection | Connection · Subscribing · Logging in · Receiving · Recovering · Wire |
 
 ## Vocabulary

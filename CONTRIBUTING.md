@@ -38,7 +38,7 @@ xcodebuild docbuild -scheme MexcKit -destination 'generic/platform=macOS'
 
 The documentation build must show no warnings from `MexcKit`, `MexcKitCore` or `MexcKitProtobuf`; the dependencies' own warnings are theirs. `MexcKit`'s archive is the documentation apps read: it includes every `MexcKitCore` type, which `MexcKitCore`'s own archive repeats for modules that import it alone.
 
-The code of the documentation's examples and the README's lives in `Tests/MexcKitTests/DocumentationExamples.swift`: `swift build --build-tests` compiles it, and `swift test` checks that each example's lines appear, in order, in one of its functions. Change both together.
+The code of the documentation's examples and the README's lives in `Tests/MexcKitTests/PublicAPI/DocumentationExamples.swift`: `swift build --build-tests` compiles it, and `swift test` checks that each example's lines appear, in order, in one of its functions. Change both together.
 
 `-Xswiftc -warnings-as-errors` applies to this package's targets only: SwiftPM compiles dependencies with their warnings suppressed.
 
@@ -46,7 +46,7 @@ Linux is a target platform with no local check yet. `swift build` and `swift tes
 
 ## Tests
 
-- Swift Testing only, one `@Suite` per file, named after the suite.
+- Swift Testing only, one `@Suite` per file, named after the suite and nested in its target's root suite: `extension MexcKitTests { @Suite("…") struct … }`. A live suite that places orders or changes settings nests in `extension MexcKitTests.LiveTrading` instead, which runs those suites one at a time. Put the file in the folder that mirrors what it tests.
 - Unit tests run offline. A live test calls MEXC's servers: give its suite `.tags(.live)`, `.enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run")` and `.timeLimit(.minutes(2))`, and build its client with `MexcFutures.Client(credentials: LiveTestSettings.credentials)`. Both come from `MexcKitTestSupport`.
 - Never put an API key or secret in a committed file, a fixture or a log.
 
