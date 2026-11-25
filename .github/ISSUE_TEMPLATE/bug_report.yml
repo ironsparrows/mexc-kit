@@ -1,0 +1,36 @@
+name: Bug report
+description: Something doesn't work the way the documentation says it should.
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: The smallest code that shows the problem, with the contract symbol and the request it sends.
+      render: swift
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Error or response
+      description: >-
+        The error the call throws, MEXC's code and message, or the response or push it couldn't read. Remove your API
+        key, secret, signatures and account IDs first.
+      render: text
+  - type: input
+    attributes:
+      label: Package version
+      placeholder: "0.1.0, or a commit"
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Xcode and OS versions
+      placeholder: "Xcode 27.2, macOS 27.2"
+    validations:
+      required: true
