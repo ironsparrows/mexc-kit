@@ -1,7 +1,8 @@
 // MARK: - Protocol
 
 extension MexcFutures {
-    /// Self-trade prevention groups. MEXC offers them to market maker accounts only.
+    /// Self-trade prevention groups. MEXC offers them to market maker accounts only, and answers other
+    /// accounts with ``MexcError/Code/noPermission``.
     ///
     /// Reading needs credentials with MEXC's "View Order Details" permission; creating, changing and
     /// deleting need "Order Placing". A request MEXC can't take as built throws

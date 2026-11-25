@@ -4,7 +4,8 @@ import Testing
 
 // Changes the ETH_USDT short leverage and sets it back: the order suites trade BTC_USDT longs, and with
 // no position there, MEXC takes the market, side and margin mode. Reads the position mode and the
-// self-trade prevention groups without changing them; the groups need a market maker account.
+// self-trade prevention groups without changing them; the groups need a market maker account, and
+// other accounts' noPermission answer is a known issue.
 extension LiveTrading {
     @Suite(
         "Live position settings and self-trade prevention", .tags(.live),
@@ -29,9 +30,19 @@ extension LiveTrading {
             await #expect(throws: Never.self) { _ = try await client.account.positionMode() }
         }
 
+        // MEXC offers the groups to market maker accounts only, and answers other accounts with
+        // noPermission (511), which is a known issue here; any other error fails the test.
         @Test func `self-trade prevention groups decode`() async throws {
-            await #expect(throws: Never.self) { _ = try await client.selfTradePrevention.groups() }
-            await #expect(throws: Never.self) { _ = try await client.selfTradePrevention.currentGroup() }
+            try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
+                _ = try await client.selfTradePrevention.groups()
+            } matching: { Self.isNotMarketMaker($0) }
+            try await withKnownIssue("Only market maker accounts have self-trade prevention groups", isIntermittent: true) {
+                _ = try await client.selfTradePrevention.currentGroup()
+            } matching: { Self.isNotMarketMaker($0) }
+        }
+
+        private static func isNotMarketMaker(_ issue: Issue) -> Bool {
+            (issue.error as? MexcError)?.code == .noPermission
         }
     }
 }
