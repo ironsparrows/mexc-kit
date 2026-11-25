@@ -6,7 +6,7 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) first: it lists the targets, the access 
 
 Swift 6.4 or later. On macOS, Xcode 27.2 or later for the iOS build.
 
-Supported platforms: macOS 13, iOS 16, tvOS 16 and visionOS 1. Linux is a target platform, not yet built or tested. watchOS is not supported.
+Supported platforms: macOS 13, iOS 16, tvOS 16 and visionOS 1. Linux, which CI builds and tests in the official `swift:6.4` image. watchOS is not supported.
 
 ## Checks before a change lands
 
@@ -19,6 +19,10 @@ copy=$(mktemp -d) && git ls-files -z --cached --others --exclude-standard | rsyn
 Git ignores the local settings file, so the copy never has it. Each run makes a new copy, so files you deleted or renamed don't linger. Stage a deleted tracked file (`git rm`) first: the copy stops at a listed file that is missing.
 
 Then, from the copy:
+
+```bash
+swift format lint --strict -r Sources/MexcKit Sources/MexcKitCore Tests Package.swift
+```
 
 ```bash
 swift build --build-tests -Xswiftc -warnings-as-errors
@@ -42,7 +46,21 @@ The code of the documentation's examples and the README's lives in `Tests/MexcKi
 
 `-Xswiftc -warnings-as-errors` applies to this package's targets only: SwiftPM compiles dependencies with their warnings suppressed.
 
-Linux is a target platform with no local check yet. `swift build` and `swift test` on Linux are unverified until CI or a Linux machine runs them, including the `MexcKitTestSupport` target, which imports Testing.
+Linux has no local check: CI builds and tests it in the official `swift:6.4` image, including the `MexcKitTestSupport` target, which imports Testing.
+
+### Format
+
+swift-format reads `.swift-format`, which is [swift-language-models](https://github.com/ironsparrows/swift-language-models)' configuration with one difference: `AllPublicDeclarationsHaveDocumentation` is off, so a public member whose name carries its meaning, such as `OrderType.limit`, needs no doc comment. Format before committing, from the repository:
+
+```bash
+swift format format -i -r Sources/MexcKit Sources/MexcKitCore Tests Package.swift
+```
+
+`Sources/MexcKitProtobuf` holds only MEXC's `.proto` files and the code generated from them, which stay as they come. Where a force unwrap or `try!` can't fail, mark it with `// swift-format-ignore: NeverForceUnwrap` or `NeverUseForceTry` and say why on the next line.
+
+### CI
+
+Pull requests and pushes to `main` run `.github/workflows/ci.yml`: on macOS, the format check, the build with warnings as errors and the tests; on Linux, the build and the tests. Live suites skip there: no workflow has MEXC's keys. The iOS, tvOS and visionOS builds and the documentation build run only before a release.
 
 ## Tests
 
@@ -98,3 +116,30 @@ A key and secret set in the environment win over the file's; the two are always 
 ## Commits
 
 Conventional Commits with a short summary, one feature per commit.
+
+## Releases
+
+A pull request's label decides the release when it merges to `main`:
+
+| Label | Release | Example |
+|---|---|---|
+| `release:patch` | a fix | 0.1.0 to 0.1.1 |
+| `release:minor` | a feature | 0.1.0 to 0.2.0 |
+| `release:major` | a breaking change | 0.1.0 to 0.2.0 before 1.0, 1.2.3 to 2.0.0 after it |
+
+A pull request without one releases nothing. A maintainer can also release `main` by hand: run the Release workflow and pick the bump. `.github/workflows/release.yml` works out the version from the latest `X.Y.Z` tag with `.github/scripts/release-version.sh`, builds and tests on macOS and Linux, builds for iOS, tvOS and visionOS and builds the documentation; only when all of them pass does it tag the version, publish a GitHub release whose notes `.github/release.yml` groups by label, and start the Documentation workflow.
+
+The first version, 0.1.0, and 1.0.0 are tagged by hand on `main`:
+
+```bash
+git tag -a 0.1.0 -m "MexcKit 0.1.0" && git push origin 0.1.0
+```
+
+Then create its GitHub release, and run the Documentation workflow by hand, since nothing else starts it for a tag made by hand.
+
+The repository needs, once:
+
+- The labels `release:patch`, `release:minor`, `release:major` and `bug` (the bug report form adds it).
+- Pages set to deploy from GitHub Actions; the `github-pages` environment lets only `main` deploy. Pages on a private repository needs a paid GitHub plan for the organization, so until the repository is public or the plan allows it, the Documentation workflow fails at its deploy job and the docs are built only locally.
+
+`.github/scripts/build-documentation.sh` builds the same site locally into `site/`. It appends the documentation plugin to `Package.swift`, so run it in a clean copy and throw the copy away. It runs docc through `.github/scripts/docc-with-core-comments.py`, which puts `MexcKitCore`'s doc comments back on `MexcKit`'s pages: without it, every core type's page there has no description.
