@@ -7,7 +7,7 @@ import Testing
 // position, fill and balance streams are open, and checks their pushes decode. Then, on another such
 // long, places and cancels a stop order, a trailing order, a plan order and a limit order with
 // attached stops, as the live plan, stop and trailing order suite does, while their streams are open.
-extension LiveTrading {
+extension MexcKitTests.LiveTrading {
     @Suite(
         "Live account streams", .tags(.live),
         .enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run"), .timeLimit(.minutes(2))

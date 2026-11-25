@@ -3,22 +3,24 @@ import MexcKit
 import Testing
 
 // Only `import MexcKit`, as an app writes: the shorter calls reach an app's own conformer.
-@Suite("Market API defaults")
-struct MarketAPIDefaultsTests {
-    @Test func `the shorter calls forward to the full requirement`() async throws {
-        let recorder = RecordingMarket()
-        let market: any MexcFutures.MarketAPI = recorder
-        _ = try await market.orderBook("BTC_USDT")
-        _ = try await market.candles("BTC_USDT", interval: .oneHour)
-        _ = try await market.candles("BTC_USDT", interval: .oneHour, price: .fair)
-        _ = try await market.candles("BTC_USDT", interval: .oneHour, from: .distantPast, to: .distantFuture)
-        _ = try await market.deals("BTC_USDT")
-        _ = try await market.fundingRateHistory("BTC_USDT")
-        _ = try await market.insuranceFundHistory("BTC_USDT")
-        #expect(await recorder.calls.value == [
-            "orderBook nil", "candles nil nil last", "candles nil nil fair", "candles set set last", "deals nil",
-            "fundingRateHistory 1 20", "insuranceFundHistory 1 20",
-        ])
+extension MexcKitTests {
+    @Suite("Market API defaults")
+    struct MarketAPIDefaultsTests {
+        @Test func `the shorter calls forward to the full requirement`() async throws {
+            let recorder = RecordingMarket()
+            let market: any MexcFutures.MarketAPI = recorder
+            _ = try await market.orderBook("BTC_USDT")
+            _ = try await market.candles("BTC_USDT", interval: .oneHour)
+            _ = try await market.candles("BTC_USDT", interval: .oneHour, price: .fair)
+            _ = try await market.candles("BTC_USDT", interval: .oneHour, from: .distantPast, to: .distantFuture)
+            _ = try await market.deals("BTC_USDT")
+            _ = try await market.fundingRateHistory("BTC_USDT")
+            _ = try await market.insuranceFundHistory("BTC_USDT")
+            #expect(await recorder.calls.value == [
+                "orderBook nil", "candles nil nil last", "candles nil nil fair", "candles set set last", "deals nil",
+                "fundingRateHistory 1 20", "insuranceFundHistory 1 20",
+            ])
+        }
     }
 }
 

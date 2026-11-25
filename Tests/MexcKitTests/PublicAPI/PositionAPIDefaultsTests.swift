@@ -3,22 +3,24 @@ import MexcKit
 import Testing
 
 // Only `import MexcKit`, as an app writes: the shorter calls reach an app's own conformer.
-@Suite("Position API defaults")
-struct PositionAPIDefaultsTests {
-    @Test func `the shorter calls forward to the full requirement`() async throws {
-        let recorder = RecordingPositions()
-        let positions: any MexcFutures.PositionAPI = recorder
-        _ = try await positions.list()
-        _ = try await positions.list("BTC_USDT")
-        _ = try await positions.history()
-        _ = try await positions.history("BTC_USDT", page: .init(number: 2, size: 100))
-        _ = try await positions.fundingPayments()
-        _ = try await positions.fundingPayments("BTC_USDT", page: .init(number: 2, size: 100))
-        #expect(await recorder.calls.value == [
-            "list nil nil", "list BTC_USDT nil", "history nil nil nil nil 1 20",
-            "history BTC_USDT nil nil nil 2 100", "fundingPayments nil nil nil nil nil 1 20",
-            "fundingPayments BTC_USDT nil nil nil nil 2 100",
-        ])
+extension MexcKitTests {
+    @Suite("Position API defaults")
+    struct PositionAPIDefaultsTests {
+        @Test func `the shorter calls forward to the full requirement`() async throws {
+            let recorder = RecordingPositions()
+            let positions: any MexcFutures.PositionAPI = recorder
+            _ = try await positions.list()
+            _ = try await positions.list("BTC_USDT")
+            _ = try await positions.history()
+            _ = try await positions.history("BTC_USDT", page: .init(number: 2, size: 100))
+            _ = try await positions.fundingPayments()
+            _ = try await positions.fundingPayments("BTC_USDT", page: .init(number: 2, size: 100))
+            #expect(await recorder.calls.value == [
+                "list nil nil", "list BTC_USDT nil", "history nil nil nil nil 1 20",
+                "history BTC_USDT nil nil nil 2 100", "fundingPayments nil nil nil nil nil 1 20",
+                "fundingPayments BTC_USDT nil nil nil nil 2 100",
+            ])
+        }
     }
 }
 

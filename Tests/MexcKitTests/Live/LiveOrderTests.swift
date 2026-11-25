@@ -9,7 +9,7 @@ import Testing
 // two resting orders in a batch, another with an external ID, and a limit buy it chases to the best bid,
 // cancels them by ID, by external ID and in every market, and closes the long the chase may have
 // opened. Batches need a market maker account; MEXC's refusal is a known issue.
-extension LiveTrading {
+extension MexcKitTests.LiveTrading {
     @Suite(
         "Live orders", .tags(.live), .enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run"),
         .timeLimit(.minutes(2))

@@ -10,7 +10,7 @@ import Testing
 // stay open: they push only on events, and whatever arrives must decode. The second test switches the
 // account's position mode and back, which resets the risk limit level to 1 when leaving hedge mode, and
 // turns multi-asset mode on and off, which leaves it off; the position mode stream must push and decode.
-extension LiveTrading {
+extension MexcKitTests.LiveTrading {
     @Suite(
         "Live position changes", .tags(.live),
         .enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run"), .timeLimit(.minutes(2))

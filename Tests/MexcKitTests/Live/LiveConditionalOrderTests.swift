@@ -11,7 +11,7 @@ import Testing
 // long, changes each kind before canceling it: the stop-loss and a take-profit of the stop order, the
 // trailing order's callback and activation price, and the plan order's trigger and attached stops; then
 // cancels the stop orders by position and the plan orders by market.
-extension LiveTrading {
+extension MexcKitTests.LiveTrading {
     @Suite(
         "Live plan, stop and trailing orders", .tags(.live),
         .enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run"), .timeLimit(.minutes(2))

@@ -3,21 +3,23 @@ import MexcKit
 import Testing
 
 // Only `import MexcKit`, as an app writes: the shorter calls reach an app's own conformer.
-@Suite("Account API defaults")
-struct AccountAPIDefaultsTests {
-    @Test func `the shorter calls forward to the full requirement`() async throws {
-        let recorder = RecordingAccount()
-        let account: any MexcFutures.AccountAPI = recorder
-        _ = try await account.transfers()
-        _ = try await account.transfers(page: .init(number: 2, size: 100))
-        _ = try await account.riskLimits()
-        _ = try await account.feeRates()
-        _ = try await account.feeDeductions("BTC_USDT")
-        _ = try await account.feeDeductions("BTC_USDT", page: .init(number: 2, size: 100))
-        #expect(await recorder.calls.value == [
-            "transfers nil nil nil 1 20", "transfers nil nil nil 2 100", "riskLimits nil", "feeRates nil",
-            "feeDeductions BTC_USDT [] nil nil 1 20", "feeDeductions BTC_USDT [] nil nil 2 100",
-        ])
+extension MexcKitTests {
+    @Suite("Account API defaults")
+    struct AccountAPIDefaultsTests {
+        @Test func `the shorter calls forward to the full requirement`() async throws {
+            let recorder = RecordingAccount()
+            let account: any MexcFutures.AccountAPI = recorder
+            _ = try await account.transfers()
+            _ = try await account.transfers(page: .init(number: 2, size: 100))
+            _ = try await account.riskLimits()
+            _ = try await account.feeRates()
+            _ = try await account.feeDeductions("BTC_USDT")
+            _ = try await account.feeDeductions("BTC_USDT", page: .init(number: 2, size: 100))
+            #expect(await recorder.calls.value == [
+                "transfers nil nil nil 1 20", "transfers nil nil nil 2 100", "riskLimits nil", "feeRates nil",
+                "feeDeductions BTC_USDT [] nil nil 1 20", "feeDeductions BTC_USDT [] nil nil 2 100",
+            ])
+        }
     }
 }
 

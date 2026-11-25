@@ -7,7 +7,7 @@ import Testing
 // self-trade prevention groups, then creates, changes and deletes one; the groups need a market maker
 // account, and other accounts' noPermission answer is a known issue. Reads a sub-account's settings,
 // which need a master key and its sub-account; MEXC's refusal is a known issue.
-extension LiveTrading {
+extension MexcKitTests.LiveTrading {
     @Suite(
         "Live position settings and self-trade prevention", .tags(.live),
         .enabled(if: areLiveTestsEnabled, "Set MEXC_API_KEY and MEXC_API_SECRET to run"), .timeLimit(.minutes(2))
