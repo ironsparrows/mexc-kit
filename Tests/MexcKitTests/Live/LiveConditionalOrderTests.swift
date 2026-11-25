@@ -51,10 +51,12 @@ extension LiveTrading {
                 options: .init(positionMode: mode)
             ))
 
-            _ = try await client.stopOrder.pending(Self.btc)
-            _ = try await client.stopOrder.list(Self.btc)
-            _ = try await client.trailingOrder.list(Self.btc)
-            _ = try await client.planOrder.list(Self.btc, from: started.addingTimeInterval(-60), to: .now)
+            await #expect(throws: Never.self) { _ = try await client.stopOrder.pending(Self.btc) }
+            await #expect(throws: Never.self) { _ = try await client.stopOrder.list(Self.btc) }
+            await #expect(throws: Never.self) { _ = try await client.trailingOrder.list(Self.btc) }
+            await #expect(throws: Never.self) {
+                _ = try await client.planOrder.list(Self.btc, from: started.addingTimeInterval(-60), to: .now)
+            }
         }
     }
 }

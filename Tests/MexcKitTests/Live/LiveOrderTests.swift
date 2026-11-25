@@ -29,14 +29,14 @@ extension LiveTrading {
                 .close(.long, Self.btc, .market, volume: volume, marginMode: .isolated, position: position.id, options: options)
             )
 
-            _ = try await client.order.get(opened.id)
+            await #expect(throws: Never.self) { _ = try await client.order.get(opened.id) }
             // Two IDs, so the comma in `order_ids` is signed and sent.
-            _ = try await client.order.get([opened.id, closed.id])
-            _ = try await client.order.fills(of: opened.id)
-            _ = try await client.order.pendingCounts()
-            _ = try await client.order.history(Self.btc)
-            _ = try await client.order.closed(Self.btc)
-            _ = try await client.order.fills(Self.btc)
+            await #expect(throws: Never.self) { _ = try await client.order.get([opened.id, closed.id]) }
+            await #expect(throws: Never.self) { _ = try await client.order.fills(of: opened.id) }
+            await #expect(throws: Never.self) { _ = try await client.order.pendingCounts() }
+            await #expect(throws: Never.self) { _ = try await client.order.history(Self.btc) }
+            await #expect(throws: Never.self) { _ = try await client.order.closed(Self.btc) }
+            await #expect(throws: Never.self) { _ = try await client.order.fills(Self.btc) }
         }
 
         @Test func `a resting order is changed and canceled, and every read decodes`() async throws {
@@ -61,9 +61,9 @@ extension LiveTrading {
             _ = try await client.order.cancel([modified])
             try await client.order.cancelAll(Self.btc)
 
-            _ = try await client.order.pending()
-            _ = try await client.order.get(externalID: externalID, in: Self.btc)
-            _ = try await client.order.get(externalIDs: [externalID], in: Self.btc)
+            await #expect(throws: Never.self) { _ = try await client.order.pending() }
+            await #expect(throws: Never.self) { _ = try await client.order.get(externalID: externalID, in: Self.btc) }
+            await #expect(throws: Never.self) { _ = try await client.order.get(externalIDs: [externalID], in: Self.btc) }
         }
     }
 }

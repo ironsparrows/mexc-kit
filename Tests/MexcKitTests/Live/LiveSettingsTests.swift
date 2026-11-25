@@ -19,18 +19,19 @@ extension LiveTrading {
             let changed = current.leverage == 5 ? 6 : 5
 
             try await client.position.setLeverage(changed, in: Self.eth, side: .short, marginMode: current.marginMode)
-            let after = try await client.position.leverage(Self.eth)
+            // Read without stopping the test, so the leverage is set back even when the read fails.
+            let after = try? await client.position.leverage(Self.eth)
             try await client.position.setLeverage(
                 current.leverage, in: Self.eth, side: .short, marginMode: current.marginMode
             )
 
-            #expect(after.contains { $0.side == .short && $0.leverage == changed })
-            _ = try await client.account.positionMode()
+            #expect(after?.contains { $0.side == .short && $0.leverage == changed } == true)
+            await #expect(throws: Never.self) { _ = try await client.account.positionMode() }
         }
 
         @Test func `self-trade prevention groups decode`() async throws {
-            _ = try await client.selfTradePrevention.groups()
-            _ = try await client.selfTradePrevention.currentGroup()
+            await #expect(throws: Never.self) { _ = try await client.selfTradePrevention.groups() }
+            await #expect(throws: Never.self) { _ = try await client.selfTradePrevention.currentGroup() }
         }
     }
 }

@@ -134,16 +134,18 @@ struct AccountEndpointsTests {
     }
 
     @Test func `fee rates without the fields MEXC doesn't mark as always sent`() async throws {
-        // Not MEXC's example: its documented fields, without the optional ones.
+        // Not MEXC's example: its documented fields, without the optional ones. A live response left out
+        // the discount rate.
         let (rates, url) = try await call(json: """
-            {"success":true,"code":0,"data":{"joinDiscount":false,"enjoyDiscount":false,"discountRate":1,\
-            "joinDeduct":false,"enjoyDeduct":false,"deductRate":1,"originalMakerFee":0.0001,"originalTakerFee":0.0004,\
+            {"success":true,"code":0,"data":{"joinDiscount":false,"enjoyDiscount":false,\
+            "joinDeduct":false,"enjoyDeduct":false,"originalMakerFee":0.0001,"originalTakerFee":0.0004,\
             "realMakerFee":0.0001,"realTakerFee":0.0004,"dealAmount":12.5,"feeRateMode":"NORMAL"}}
             """) { try await $0.feeRates(nil) }
         #expect(url == "https://api.mexc.com/api/v1/private/account/tiered_fee_rate/v2")
         #expect(rates.symbol == nil && rates.walletBalance == nil && rates.leverage == nil)
         #expect(rates.mode == .normal)
         #expect(rates.tiers.isEmpty)
+        #expect(rates.discountRate == nil && rates.deductionRate == nil)
     }
 
     @Test func `fee rates whose leverage range is reversed throw`() async throws {

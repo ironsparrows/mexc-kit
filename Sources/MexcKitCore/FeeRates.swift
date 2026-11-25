@@ -5,8 +5,8 @@ public import Foundation
 extension MexcFutures {
     /// The account's trading fee rates, in one market or in general, and what they're based on.
     ///
-    /// The optional properties are in MEXC's documentation but not marked as always sent; `nil` means
-    /// the response didn't include the field. Not exposed: which contracts the tiers apply to (MEXC
+    /// MEXC documents every property but doesn't always send them all, and its documentation marks
+    /// none as optional; `nil` means the response didn't include the field. Not exposed: which contracts the tiers apply to (MEXC
     /// identifies them by contract ID, this SDK by symbol), the tiers' statistic window, and the
     /// leverage mode's rates, whose shape MEXC doesn't document.
     public struct FeeRates: Hashable, Sendable {
@@ -25,14 +25,15 @@ extension MexcFutures {
         public let joinsDiscount: Bool
         /// Whether the account currently receives the discount.
         public let receivesDiscount: Bool
-        /// The discount rate, as MEXC reports it.
-        public let discountRate: Decimal
+        /// The discount rate, as MEXC reports it; `nil` when the response leaves it out, as it does for
+        /// some accounts.
+        public let discountRate: Decimal?
         /// Whether the account takes part in MEXC's fee deduction.
         public let joinsDeduction: Bool
         /// Whether the account currently receives the deduction.
         public let receivesDeduction: Bool
-        /// The deduction rate, as MEXC reports it.
-        public let deductionRate: Decimal
+        /// The deduction rate, as MEXC reports it; `nil` when the response leaves it out.
+        public let deductionRate: Decimal?
         /// MEXC's "trading volume in the last 30 days", as an amount.
         public let tradedAmount: Decimal
         /// The wallet balance of yesterday.
@@ -46,8 +47,8 @@ extension MexcFutures {
 
         public init(
             symbol: Symbol?, maker: Decimal, taker: Decimal, standardMaker: Decimal, standardTaker: Decimal, mode: Mode,
-            joinsDiscount: Bool, receivesDiscount: Bool, discountRate: Decimal, joinsDeduction: Bool,
-            receivesDeduction: Bool, deductionRate: Decimal, tradedAmount: Decimal, walletBalance: Decimal?,
+            joinsDiscount: Bool, receivesDiscount: Bool, discountRate: Decimal?, joinsDeduction: Bool,
+            receivesDeduction: Bool, deductionRate: Decimal?, tradedAmount: Decimal, walletBalance: Decimal?,
             tiers: [Tier], tierTradedAmount: Decimal?, leverage: ClosedRange<Int>?
         ) {
             self.symbol = symbol
@@ -128,10 +129,10 @@ extension MexcFutures.FeeRates: Decodable {
         mode = try container.decode(Mode.self, forKey: .feeRateMode)
         joinsDiscount = try container.decode(Bool.self, forKey: .joinDiscount)
         receivesDiscount = try container.decode(Bool.self, forKey: .enjoyDiscount)
-        discountRate = try container.decimal(forKey: .discountRate)
+        discountRate = try container.decimalIfPresent(forKey: .discountRate)
         joinsDeduction = try container.decode(Bool.self, forKey: .joinDeduct)
         receivesDeduction = try container.decode(Bool.self, forKey: .enjoyDeduct)
-        deductionRate = try container.decimal(forKey: .deductRate)
+        deductionRate = try container.decimalIfPresent(forKey: .deductRate)
         tradedAmount = try container.decimal(forKey: .dealAmount)
         walletBalance = try container.decimalIfPresent(forKey: .walletBalance)
         tiers = try container.decodeIfPresent([Tier].self, forKey: .tieredFeeRates) ?? []
