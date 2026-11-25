@@ -39,9 +39,16 @@ struct StreamSubscription: Hashable, Sendable {
         var parameters = parameters
         if let symbol { parameters["symbol"] = .string(symbol.rawValue) }
         let request = Request(method: "\(verb).\(channel)", param: parameters)
-        // Encoding strings, integers and booleans can't fail.
-        let data = try! JSONEncoder.requestBody.encode(request)
-        return String(decoding: data, as: UTF8.self)
+        return JSONEncoder.streamText(of: request)
+    }
+}
+
+extension JSONEncoder {
+    /// The text frame of a stream request, encoded as ``requestBody`` encodes a REST body.
+    static func streamText(of request: some Encodable) -> String {
+        // swift-format-ignore: NeverUseForceTry
+        // Stream requests hold only strings, integers, booleans and arrays of them, whose encoding can't fail.
+        String(decoding: try! requestBody.encode(request), as: UTF8.self)
     }
 }
 

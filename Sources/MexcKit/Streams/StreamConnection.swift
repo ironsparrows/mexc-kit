@@ -598,7 +598,7 @@ actor StreamConnection {
             param = Parameters(apiKey: apiKey, reqTime: requestTime, signature: signature)
         }
 
-        var text: String { String(decoding: try! JSONEncoder.requestBody.encode(self), as: UTF8.self) }
+        var text: String { JSONEncoder.streamText(of: self) }
     }
 
     private struct PersonalFilter: Encodable {
@@ -619,7 +619,7 @@ actor StreamConnection {
             param = Parameters(filters: filters)
         }
 
-        var text: String { String(decoding: try! JSONEncoder.requestBody.encode(self), as: UTF8.self) }
+        var text: String { JSONEncoder.streamText(of: self) }
     }
 
     /// A text frame: an acknowledgement such as `{"channel":"rs.sub.deal","data":"success"}`, an

@@ -48,10 +48,12 @@ enum DocumentationExamples {
         let options = MexcFutures.OrderRequest.Options(positionMode: try await client.account.positionMode())
 
         // A buy 5% below the market rests in the book.
-        let placed = try await client.order.place(.open(
-            .long, "BTC_USDT", .limit(price: contract.round(price: lastPrice * Decimal(string: "0.95")!, rule: .down)),
+        let price = contract.round(price: lastPrice * 95 / 100, rule: .down)
+        let request = MexcFutures.OrderRequest.open(
+            .long, "BTC_USDT", .limit(price: price),
             volume: contract.minimumVolume, leverage: 5, marginMode: .isolated, options: options
-        ))
+        )
+        let placed = try await client.order.place(request)
         try await client.order.cancel(placed.id)
     }
 

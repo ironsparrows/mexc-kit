@@ -114,6 +114,8 @@ extension MexcFutures.Client {
         /// accept it.
         public var timeout: Duration
 
+        // swift-format-ignore: NeverForceUnwrap
+        // The default URLs are valid literals.
         /// Creates a configuration; every setting has a default.
         public init(
             restURL: URL = URL(string: "https://api.mexc.com")!,
