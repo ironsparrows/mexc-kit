@@ -52,13 +52,20 @@ extension LiveTrading {
                     marginMode: .isolated, externalID: externalID, options: options
                 )
             )
+            // MEXC sometimes answers a change right after placing with 2054, its "try editing the order again
+            // later"; that is a known issue here, and the order is canceled either way.
+            var modified: MexcFutures.OrderID?
+            try await withKnownIssue("MEXC asks to edit the order again later", isIntermittent: true) {
+                modified = try await client.order.modify(
+                    placed.id, price: price - contract.priceTick, volume: contract.minimumVolume
+                )
+            } matching: { issue in
+                (issue.error as? MexcError)?.code == MexcError.Code(rawValue: 2054)
+            }
             // MEXC may answer a change with a new order ID, so each cancel below reports per order instead of
             // throwing, and the last one cancels whatever still rests.
-            let modified = try await client.order.modify(
-                placed.id, price: price - contract.priceTick, volume: contract.minimumVolume
-            )
             _ = try await client.order.cancel(externalIDs: [externalID], in: Self.btc)
-            _ = try await client.order.cancel([modified])
+            _ = try await client.order.cancel([placed.id] + [modified].compactMap { $0 })
             try await client.order.cancelAll(Self.btc)
 
             await #expect(throws: Never.self) { _ = try await client.order.pending() }
