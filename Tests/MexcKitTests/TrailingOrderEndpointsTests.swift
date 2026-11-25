@@ -77,14 +77,16 @@ struct TrailingOrderEndpointsTests {
         )])
     }
 
-    @Test func `a trailing order without a margin mode has none`() async throws {
-        // MEXC's documented example includes `openType`, but a live closing trailing order left it out.
+    @Test func `a closing trailing order without a margin mode, leverage or volume has none`() async throws {
+        // MEXC's documented example includes them, but a live closing trailing order left out `openType`
+        // and `leverage`; `vol` is optional in MEXC's push.
         let (orders, _) = try await call(json: #"""
-            {"success":true,"code":0,"data":[{"id":"7","symbol":"BTC_USDC","leverage":5,"side":4,"vol":1,"trend":1,
+            {"success":true,"code":0,"data":[{"id":"7","symbol":"BTC_USDC","side":4,"trend":1,
              "activePrice":90000,"backType":1,"backValue":0.05,"orderId":0,"errorCode":0,"state":0,
              "createTime":1762011642623,"positionMode":1,"reduceOnly":false}]}
             """#) { try await $0.list("BTC_USDC", states: [], side: nil, start: nil, end: nil, page: .first) }
         #expect(orders.first?.marginMode == nil)
+        #expect(orders.first?.leverage == nil && orders.first?.volume == nil)
         #expect(orders.first?.side == .closeLong)
     }
 

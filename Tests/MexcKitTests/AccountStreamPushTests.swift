@@ -145,10 +145,12 @@ struct AccountStreamPushTests {
         trailing.state = 0
         trailing.clearOrderID()
         trailing.clearMarkPrice()
-        // A live closing trailing order was pushed without `openType`.
+        // A live closing trailing order was pushed without `openType` and `leverage`; `vol` is optional too.
         trailing.clearOpenType()
+        trailing.clearLeverage()
+        trailing.clearVol()
         let decoded = try await first(of: streams.trailingOrders(), push: .contractTrackOrder(trailing), on: "track.order")
-        #expect(decoded.marginMode == nil)
+        #expect(decoded.marginMode == nil && decoded.leverage == nil && decoded.volume == nil)
         #expect(decoded.state == .inactive)
         #expect(decoded.order == nil)
         #expect(decoded.referencePrice == nil)

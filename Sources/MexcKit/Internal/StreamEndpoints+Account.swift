@@ -351,8 +351,8 @@ extension MexcFutures.TrailingOrder {
             side: MexcFutures.OrderSide(rawValue: try requiredNonZero(trailing.side, "side")),
             marginMode: trailing.hasOpenType && trailing.openType != 0
                 ? MexcFutures.MarginMode(rawValue: Int(trailing.openType)) : nil,
-            leverage: Int(try required(trailing.hasLeverage, trailing.leverage, "leverage")),
-            volume: try .stream(trailing.vol, "vol"),
+            leverage: trailing.hasLeverage ? Int(trailing.leverage) : nil,
+            volume: try .streamIfPresent(trailing.vol, "vol"),
             source: MexcFutures.PriceSource(rawValue: try requiredNonZero(trailing.trend, "trend")),
             callback: Callback(
                 kind: Callback.Kind(rawValue: try requiredNonZero(trailing.backType, "backType")),
