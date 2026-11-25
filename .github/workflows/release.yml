@@ -1,0 +1,196 @@
+name: Release
+
+# Releases when a pull request with a release label merges, or by hand from main with the bump to apply. A merge pushes
+# its commit to main, and the push looks up the pull request that commit came from to read its labels. It runs main's
+# own code, never a pull request's. A push that no merged pull request made, or one without a release label, releases
+# nothing. Every build runs on the commit first, and the release is tagged only if they all pass.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: The part of the version to raise from the latest tag
+        type: choice
+        options: [patch, minor, major]
+        required: true
+
+permissions:
+  contents: read
+
+# Runs wait their turn in order, so a later push never cancels a pending release.
+concurrency:
+  group: release
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  version:
+    name: Work out the version
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      last: ${{ steps.version.outputs.last }}
+      next: ${{ steps.version.outputs.next }}
+    steps:
+      # Only the scripts are needed.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Find the merged pull request
+        id: pull
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # GitHub links a merge commit to its pull request moments after the push, so it looks a few times.
+          for attempt in 1 2 3 4 5; do
+            gh api "repos/$GH_REPO/commits/$SHA/pulls" \
+              --jq '[.[] | select(.merged_at != null and .base.ref == "main")][0] // empty' > "$RUNNER_TEMP/pull.json"
+            if [ -s "$RUNNER_TEMP/pull.json" ]; then break; fi
+            sleep 5
+          done
+          if [ ! -s "$RUNNER_TEMP/pull.json" ]; then
+            echo "No merged pull request made this commit, so nothing is released."
+            exit 0
+          fi
+          bump=$(jq -r '.labels[].name' "$RUNNER_TEMP/pull.json" | bash .github/scripts/release-version.sh bump)
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+      - name: Work out the version
+        id: version
+        if: inputs.bump != '' || steps.pull.outputs.bump != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUMP: ${{ inputs.bump || steps.pull.outputs.bump }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GH_REPO/tags" --jq '.[].name' \
+            | bash .github/scripts/release-version.sh next "$BUMP" >> "$GITHUB_OUTPUT"
+      - name: First release
+        if: steps.version.outcome == 'success' && steps.version.outputs.next == ''
+        run: echo "::notice::No X.Y.Z tag yet. Tag the first release by hand; later releases run here."
+
+  macos:
+    name: Build and test on macOS
+    needs: version
+    if: needs.version.outputs.next != ''
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      # Only the `xcode-27` image (a public preview) has Xcode 27.x; `/Applications/Xcode_27.2.app` is a link that
+      # stays when the release candidate becomes the release.
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+      - name: Format
+        run: swift format lint --strict -r Sources/MexcKit Sources/MexcKitCore Tests Package.swift
+      - name: Build
+        run: swift build --build-tests -Xswiftc -warnings-as-errors
+      - name: Test
+        # Without MEXC's keys the live suites skip themselves.
+        run: swift test --skip-build
+
+  linux:
+    name: Build and test on Linux
+    needs: version
+    if: needs.version.outputs.next != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container: swift:6.4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build
+        run: swift build --build-tests -Xswiftc -warnings-as-errors
+      - name: Test
+        run: swift test --skip-build
+
+  platforms:
+    name: Build for ${{ matrix.platform }}
+    needs: version
+    if: needs.version.outputs.next != ''
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      # Only the `xcode-27` image (a public preview) has Xcode 27.x; `/Applications/Xcode_27.2.app` is a link that
+      # stays when the release candidate becomes the release.
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS, tvOS, visionOS]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build
+        run: >
+          xcodebuild build -quiet
+          -scheme MexcKit
+          -destination 'generic/platform=${{ matrix.platform }} Simulator'
+
+  docs:
+    name: Documentation
+    needs: version
+    if: needs.version.outputs.next != ''
+    runs-on: xcode-27
+    timeout-minutes: 20
+    env:
+      # Only the `xcode-27` image (a public preview) has Xcode 27.x; `/Applications/Xcode_27.2.app` is a link that
+      # stays when the release candidate becomes the release.
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build documentation
+        run: bash .github/scripts/build-documentation.sh --warnings-as-errors
+
+  publish:
+    name: Tag and publish
+    needs: [version, macos, linux, platforms, docs]
+    if: needs.version.outputs.next != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: write
+    steps:
+      - name: Tag and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          LAST: ${{ needs.version.outputs.last }}
+          NEXT: ${{ needs.version.outputs.next }}
+        run: |
+          set -euo pipefail
+          # Re-running a run's failed jobs reuses its version, so a tag made since then stops it.
+          latest=$(gh api --paginate "repos/$GH_REPO/tags" --jq '.[].name' | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sort -V | tail -n 1)
+          if [ "$latest" != "$LAST" ]; then
+            echo "::notice::$latest was tagged after this run worked out $NEXT, so nothing is released."
+            exit 0
+          fi
+          # Only a commit newer than the last tag is released, so re-running an old run never tags older code.
+          status=$(gh api "repos/$GH_REPO/compare/$LAST...$SHA?per_page=1" --jq .status)
+          if [ "$status" != ahead ]; then
+            echo "::notice::$SHA is $status of $LAST, so nothing is released."
+            exit 0
+          fi
+          gh release create "$NEXT" --target "$SHA" --generate-notes --notes-start-tag "$LAST"
+          # A release made with this token starts no workflow, but a dispatch does.
+          gh workflow run documentation.yml --ref main
