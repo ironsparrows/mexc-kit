@@ -7,7 +7,7 @@ import Testing
 @Suite("Documentation examples")
 struct DocumentationExampleTests {
     private static let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        .deletingLastPathComponent()
+        .deletingLastPathComponent().deletingLastPathComponent()
 
     @Test(arguments: [
         "README.md", "Sources/MexcKit/MexcKit.docc/MexcKit.md", "Sources/MexcKit/MexcKit.docc/GettingStarted.md",
@@ -47,7 +47,7 @@ struct DocumentationExampleTests {
     /// The non-blank lines of each `static func` in `DocumentationExamples.swift`, unindented to the
     /// function body's level.
     private static func functionBodies() throws -> [[String]] {
-        let url = root.appending(path: "Tests/MexcKitTests/DocumentationExamples.swift")
+        let url = root.appending(path: "Tests/MexcKitTests/PublicAPI/DocumentationExamples.swift")
         var bodies: [[String]] = []
         var body: [String]?
         for line in try String(contentsOf: url, encoding: .utf8).split(separator: "\n").map(String.init) {

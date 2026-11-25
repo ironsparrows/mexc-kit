@@ -10,7 +10,7 @@ import Testing
 /// No private push has been recorded yet, so the pushes here are built from the examples on MEXC's
 /// WebSocket documentation pages (order, fill details, position, assets) with the `.proto` messages.
 @Suite("Account streams", .timeLimit(.minutes(1)))
-struct AccountStreamTests {
+struct AccountStreamsTests {
     private let server = FakeWebSocketServer()
 
     // MARK: Login and filter

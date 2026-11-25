@@ -1,4 +1,5 @@
 import Foundation
+import MexcKitTestSupport
 import Testing
 @testable import MexcKit
 
@@ -71,8 +72,7 @@ actor FakeWebSocketServer: WebSocketTransport {
 
     /// Sends a recorded push from `Fixtures/Stream`, such as `"push.deal.ETH_USDT"`.
     func push(_ fixture: String) throws {
-        let url = try #require(Bundle.module.url(forResource: fixture, withExtension: "bin", subdirectory: "Fixtures/Stream"))
-        send(.binary(try Data(contentsOf: url)))
+        send(.binary(try Fixture.push(fixture)))
     }
 
     /// Closes the open connection from the server's side.
@@ -128,4 +128,17 @@ extension StreamConnection.Timing {
         pingInterval: .seconds(3600), acknowledgementTimeout: .milliseconds(200),
         firstReconnectDelay: .milliseconds(10), maximumReconnectDelay: .milliseconds(40)
     )
+}
+
+extension Streams {
+    /// Streams over `server` with ``StreamConnection/Timing/test`` waits.
+    static func test(
+        _ server: FakeWebSocketServer, account: StreamConnection.Account? = nil, timing: StreamConnection.Timing = .test
+    ) -> Streams {
+        let url = URL(string: "wss://contract.mexc.com/edge?Trans-Protocol=Protobuf")!
+        return Streams(
+            market: MarketStreams(connection: StreamConnection(url: url, transport: server, timing: timing)),
+            account: AccountStreams(connection: StreamConnection(url: url, transport: server, account: account, timing: timing))
+        )
+    }
 }

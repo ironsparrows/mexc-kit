@@ -1,4 +1,5 @@
 import Foundation
+import MexcKitTestSupport
 import Testing
 @testable import MexcKit
 
@@ -6,7 +7,7 @@ import Testing
 @Suite("WebSocket loopback", .timeLimit(.minutes(1)))
 struct WebSocketLoopbackTests {
     @Test func `the transport reads frames larger than 16 KiB, in order`() async throws {
-        let tickers = try Self.fixture("push.tickers")
+        let tickers = try Fixture.push("push.tickers")
         #expect(tickers.count > 100_000)
         try await LoopbackWebSocketServer.run { server in
             let session = try await WebSocketKitTransport().connect(to: server.url)
@@ -52,16 +53,11 @@ struct WebSocketLoopbackTests {
             var received = server.received.makeAsyncIterator()
             #expect(await received.next() == #"{"method":"sub.ticker","param":{"symbol":"BTC_USDT"}}"#)
             try await server.send(#"{"channel":"rs.sub.ticker","data":"success","ts":1}"#)
-            try await server.send(try Self.fixture("push.ticker.BTC_USDT"))
+            try await server.send(try Fixture.push("push.ticker.BTC_USDT"))
 
             #expect(try await ticker.value?.lastPrice == Decimal(string: "60391.5"))
             // The stream ended, so the client closes the connection.
             #expect(await received.next() == nil)
         }
-    }
-
-    private static func fixture(_ name: String) throws -> Data {
-        let url = try #require(Bundle.module.url(forResource: name, withExtension: "bin", subdirectory: "Fixtures/Stream"))
-        return try Data(contentsOf: url)
     }
 }

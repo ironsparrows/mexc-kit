@@ -1,5 +1,6 @@
 import Foundation
 import MexcKitProtobuf
+import MexcKitTestSupport
 import SwiftProtobuf
 import Testing
 
@@ -171,7 +172,6 @@ struct ContractWrapperTests {
     }
 
     private func frame(_ name: String) throws -> ContractWrapper {
-        let url = try #require(Bundle.module.url(forResource: name, withExtension: "bin", subdirectory: "Fixtures"))
-        return try ContractWrapper(serializedBytes: Data(contentsOf: url))
+        try ContractWrapper(serializedBytes: Fixture.push(name))
     }
 }

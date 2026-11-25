@@ -1,4 +1,5 @@
 import Foundation
+import MexcKitTestSupport
 import Testing
 @testable import MexcKit
 
@@ -22,14 +23,7 @@ actor FakeTransport: HTTPTransport {
 
     /// A transport that answers each request with the next of these recorded responses.
     init(fixtures names: [String]) throws {
-        self.init(responses: try names.map { name in
-            let path = "Fixtures/" + name
-            let url = try #require(Bundle.module.url(
-                forResource: (path as NSString).lastPathComponent, withExtension: "json",
-                subdirectory: (path as NSString).deletingLastPathComponent
-            ))
-            return TransportResponse(status: 200, body: try Data(contentsOf: url))
-        })
+        self.init(responses: try names.map { TransportResponse(status: 200, body: try Fixture.response($0)) })
     }
 
     func send(_ request: TransportRequest) async throws -> TransportResponse {

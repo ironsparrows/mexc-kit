@@ -2,10 +2,10 @@ import Foundation
 import Testing
 @testable import MexcKit
 
-/// Each stream's subscribe request, and its first value read from a push recorded from MEXC's
-/// Protobuf endpoint (`Fixtures/Stream`).
-@Suite("Stream endpoints", .timeLimit(.minutes(1)))
-struct StreamEndpointsTests {
+/// Each market stream's subscribe request, and its first value read from a push recorded from
+/// MEXC's Protobuf endpoint (`Fixtures/Stream`).
+@Suite("Market streams", .timeLimit(.minutes(1)))
+struct MarketStreamsTests {
     private let server = FakeWebSocketServer()
     private var streams: Streams { .test(server) }
 
@@ -170,18 +170,5 @@ struct StreamEndpointsTests {
         var values = stream.makeAsyncIterator()
         let value = try await values.next()
         return try #require(value)
-    }
-}
-
-extension Streams {
-    /// Streams over `server` with ``StreamConnection/Timing/test`` waits.
-    static func test(
-        _ server: FakeWebSocketServer, account: StreamConnection.Account? = nil, timing: StreamConnection.Timing = .test
-    ) -> Streams {
-        let url = URL(string: "wss://contract.mexc.com/edge?Trans-Protocol=Protobuf")!
-        return Streams(
-            market: MarketStreams(connection: StreamConnection(url: url, transport: server, timing: timing)),
-            account: AccountStreams(connection: StreamConnection(url: url, transport: server, account: account, timing: timing))
-        )
     }
 }

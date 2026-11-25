@@ -58,6 +58,7 @@ let package = Package(
             name: "MexcKitTestSupport",
             dependencies: ["MexcKitCore"],
             path: "Tests/MexcKitTestSupport",
+            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         ),
         .testTarget(
@@ -69,9 +70,9 @@ let package = Package(
             name: "MexcKitProtobufTests",
             dependencies: [
                 "MexcKitProtobuf",
+                "MexcKitTestSupport",
                 .product(name: "SwiftProtobuf", package: "swift-protobuf"),
             ],
-            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         ),
         .testTarget(
@@ -88,7 +89,6 @@ let package = Package(
                 .product(name: "NIOWebSocket", package: "swift-nio"),
                 .product(name: "SwiftProtobuf", package: "swift-protobuf"),
             ],
-            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         ),
     ]
